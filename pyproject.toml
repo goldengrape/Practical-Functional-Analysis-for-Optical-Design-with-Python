@@ -1,0 +1,204 @@
+[project]
+name = "practical-functional-analysis-for-optical-design-with-python"
+version = "1.0.0"
+description = "实用泛函分析在眼视光学镜片设计中的应用 - AI设计的Python课程，使用Optiland光学库 + Manim可视化"
+authors = [
+    { name = "GoldenGrape" },
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["optics", "functional-analysis", "lens-design", "ophthalmic", "python", "ai-education", "optiland", "manim", "mathematical-visualization"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Education",
+    "Topic :: Multimedia :: Graphics :: Presentation",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.21.0",
+    "scipy>=1.7.0",
+    "pandas>=1.3.0",
+    "matplotlib>=3.4.0",
+    "plotly>=5.0.0",
+    "seaborn>=0.11.0",
+    "sympy>=1.8.0",
+    "scikit-learn>=0.24.0",
+    "optiland>=1.0.0",
+    "jupyter>=1.0.0",
+    "ipywidgets>=7.6.0",
+    "ipython>=8.0.0",
+    "tqdm>=4.62.0",
+    "rich>=12.0.0",
+    # Manim dependencies for mathematical visualization
+    "manim>=0.18.0",  # Manim Community edition
+    "manim-slides>=4.0.0",  # For creating presentation slides from Manim animations
+    "cairo>=1.21.0",  # Required by Manim for rendering
+    "pycairo>=1.23.0",  # Python bindings for Cairo
+    "pygame>=2.1.0",  # Required for Manim's interactive features
+    "opencv-python>=4.5.0",  # Required for video processing in Manim
+    "Pillow>=9.0.0",  # Image processing for Manim
+    "screeninfo>=0.8.0",  # For multi-monitor support in Manim
+    "pydub>=0.25.0",  # For audio support in animations
+]
+
+[project.optional-dependencies]
+deep-learning = [
+    "pytorch>=1.9.0",
+    "torchvision>=0.10.0",
+]
+manim-advanced = [
+    "manimgl>=1.6.0",  # 3Blue1Brown's original version for advanced features
+    "manim-pptx>=0.1.0",  # Export Manim animations to PowerPoint
+    "manim-physics>=0.1.0",  # Physics simulations for optical phenomena
+    "manim-rubikscube>=0.2.0",  # For complex 3D visualizations
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0",
+    "mypy>=0.910",
+    "pre-commit>=2.17.0",
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "twine>=4.0.0",
+    "wheel>=0.37.0",
+    "jupyterlab>=3.0.0",
+    "notebook>=6.0.0",
+    "nbconvert>=7.0.0",  # For converting notebooks to slides
+    "nbformat>=5.0.0",  # For notebook format handling
+    "pymanim>=0.1.0",  # Python bindings for Manim integration
+    "manim-utils>=0.1.0",  # Utilities for Manim workflow
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--cov=src",
+    "--cov=code_library",
+    "--cov=manim_demos",  # Add coverage for Manim demos
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--junitxml=test-results.xml.txt",  # XML格式内容但以.txt扩展名存储
+    "--tb=short",
+    "-ra",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "clinical: marks tests that use clinical data",
+    "optiland: marks tests that require optiland library",
+    "manim: marks tests that require manim (often skipped in CI due to rendering requirements)",  # New marker for Manim tests
+]
+
+[tool.coverage.run]
+source = ["src", "code_library", "manim_demos"]  # Include Manim demos in coverage
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    "*/version.py",
+    "datasets/*",
+    "course_materials/*",
+    "notebooks/*",
+    "utils/ai_course_generator/*",
+    "manim_demos/temp/*",  # Exclude temporary files from Manim rendering
+    "manim_demos/media/*",  # Exclude rendered media files
+    "manim_demos/output/*",  # Exclude output directories
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "# Manim scene classes are not meant to be tested directly",  # Exclude Manim scene classes from coverage
+    "class .*Scene(Scene):",
+]
+fail_under = 80
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | datasets
+    | course_materials
+    | notebooks
+    | manim_demos/media  # Exclude Manim media files
+    | manim_demos/output  # Exclude Manim output files
+  )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip = ["datasets", "course_materials", "notebooks", "manim_demos/media", "manim_demos/output"]
+
+[project.urls]
+"Homepage" = "https://github.com/goldengrape/Practical-Functional-Analysis-for-Optical-Design-with-Python"
+"Bug Tracker" = "https://github.com/goldengrape/Practical-Functional-Analysis-for-Optical-Design-with-Python/issues"
+"Documentation" = "https://github.com/goldengrape/Practical-Functional-Analysis-for-Optical-Design-with-Python#readme"
+"Optiland Documentation" = "https://optiland.readthedocs.io/"
+"Course Repository" = "https://github.com/goldengrape/Practical-Functional-Analysis-for-Optical-Design-with-Python"
+"Manim Documentation" = "https://docs.manim.community/"  # New URL for Manim documentation
+
+[tool.uv]
+# uv-specific configuration
+# This section is used by the uv tool for package management
+# No specific uv settings needed for this project
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Scripts configuration (equivalent to poetry.scripts)
+[project.scripts]
+setup-course = "scripts.setup:main"
+run-demo = "scripts.demos:run_all_demos"
+validate-install = "scripts.validation:check_environment"
+generate-notebooks = "scripts.notebook_generator:main"
+start-jupyter = "scripts.jupyter:start_server"
+run-tests = "pytest"
+# Manim-specific scripts
+render-all-animations = "scripts.manim_renderer:render_all_animations"  # New script for rendering all Manim animations
+create-presentation = "scripts.manim_slides:create_presentation"  # New script for creating presentation from animations
+optimize-manim-rendering = "scripts.manim_utils:optimize_rendering"  # New script for optimizing Manim rendering settings
