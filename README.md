@@ -2,10 +2,10 @@
 
 [![License](https://img.shields.io/badge/许可证-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-green.svg)](https://www.python.org/)
-[![Optiland](https://img.shields.io/badge/Optiland-v1.0%2B-orange.svg)](https://github.com/optiland/optiland)
+[![Manim](https://img.shields.io/badge/Manim-v0.18%2B-red.svg)](https://www.manim.community/)
 
 > **将光学设计挑战转化为数学解决方案**  
-> 一门由AI设计的实用课程，专注泛函分析在眼视光学镜片设计中的实际应用，全程使用Python + Optiland光学库
+> 一门由AI设计的实用课程，专注泛函分析在眼视光学镜片设计中的实际应用，全程使用Python + Manim数学动画
 
 ![课程封面](assets/course_banner.png)
 
@@ -14,7 +14,7 @@
 本课程的**完整设计、教材编写、代码实现均由AI生成**。课程内容基于：
 - 眼视光学领域的专业文献和工程实践
 - 泛函分析在光学设计中的最新应用研究  
-- **Optiland光学库**的API设计和最佳实践
+- **Manim数学动画引擎**的教学应用和最佳实践
 - Python科学计算生态的完整工具链
 - 教育心理学中的成人学习原理
 
@@ -22,23 +22,23 @@
 
 ## 🎯 课程概览
 
-这是一门**12周的实用课程**，通过眼视光学镜片设计的实际问题，教授泛函分析的核心概念。课程专为数学背景有限的光学设计师和工程师设计，**80%的时间用于Python实践**，而非理论推导。
+这是一门**13周的实用课程**（含模块0自学周），通过眼视光学镜片设计的实际问题，教授泛函分析的核心概念。课程专为数学背景有限的光学设计师和工程师设计，**80%的时间用于Python实践**，而非理论推导。
 
-**核心理念**：*"每个数学概念都配有一个可工作的Python实现，用于解决真实的镜片设计问题。"*
+**核心理念**：*"每个数学概念都配有一个可工作的Python实现 + Manim动画演示，用于解决真实的镜片设计问题。"*
 
-**技术亮点**：全程使用 **[Optiland](https://github.com/optiland/optiland)** 作为核心光学库，提供：
-- 完整的光线追迹引擎
-- 像差分析和优化工具
-- 镜片曲面建模API
-- 与泛函分析算法的无缝集成
+**技术亮点**：全程使用 **[Manim](https://www.manim.community/)** 作为核心教学工具，提供：
+- 专业级数学动画制作能力
+- 抽象概念的直观可视化
+- 光学原理的动态演示
+- 与Python科学计算的无缝集成
 
 ## 👥 目标学员
 
 - 眼视光学镜片设计师和光学工程师
 - 眼镜研发部门的技术人员
 - 视光学科的研究生和研究人员
-- **先决条件**：基础Python编程、入门级线性代数、基础光学原理
-- **无需高级数学背景** - 我们通过可视化和实际应用建立直觉
+- **先决条件**：模块0（自学）：多元微积分与线性代数（理解梯度、内积）、Python编程入门（熟悉NumPy/Matplotlib）、Manim环境能运行
+- **无需高级数学背景** - 我们通过Manim动画可视化和实际应用建立直觉
 
 ## ✨ 课程特色
 
@@ -53,41 +53,67 @@
 ### 🔥 核心优势
 
 - **AI个性化适配**：课程内容可根据学员背景动态调整难度
-- **Optiland深度整合**：所有示例基于现代光学设计库，非玩具代码
-- **临床-工程桥梁**：将验光师需求直接转化为数学约束
+- **Manim动画教学**：所有抽象数学概念都配有专业级动画演示
+- **临床-数学-动画三重转换**：每节课提供"症状→数学约束→Manim动画"完整链条
 - **生产就绪代码**：所有示例代码可直接集成到工作流程
 - **量化价值**：预期缩短镜片设计周期20-30%
 
 ## 📂 仓库结构
 
 ```bash
-├── 📁 course_materials/          # 课程教材（AI生成）
-│   ├── week1_fundamentals/      # 第1周：基础概念
-│   │   ├── lecture_notes.md     # 讲义（含Optiland示例）
-│   │   ├── python_optiland_tutorial.ipynb # Optiland入门
-│   │   └── clinical_case_study/ # 临床案例
-│   ├── week2_operators/         # 第2周：算子理论
-│   └── ...                      # 其他周次
-├── 📁 code_library/              # Python代码库
-│   ├── core_algorithms/         # 核心泛函算法
-│   ├── optiland_integration/    # Optiland专用封装
-│   │   ├── lens_design_wrapper.py # 镜片设计API封装
-│   │   ├── aberration_analysis.py # 像差分析工具
-│   │   └── optimization_utils.py  # 优化工具
-│   ├── clinical_data/           # 临床数据处理
-│   └── visualization_tools/     # 可视化工具
+├── 📁 course_repository/         # 课程仓库（13周完整结构）
+│   ├── module0_bridge/          # 模块0：桥梁周（自学）
+│   │   └── self_assessment_checklist.md # 自测清单
+│   ├── module1_foundations/     # 模块1：泛函基础（第1-4周）
+│   │   ├── week1_continuous_thinking/
+│   │   │   ├── lens_distortion_visualization.py # 项目1
+│   │   │   └── manim_demos/
+│   │   │       └── fermat_principle.py
+│   │   ├── week2_variational_principles/ # (新增周)
+│   │   │   ├── path_optimization_numerical.py # 项目2
+│   │   │   └── manim_demos/
+│   │   │       ├── euler_lagrange_derivation.py
+│   │   │       ├── brachistochrone.py
+│   │   │       └── snells_law_derivation.py
+│   │   ├── week3_functional_gradient_descent/
+│   │   │   ├── curvature_optimization.py # 项目3
+│   │   │   └── manim_demos/
+│   │   │       └── gradient_descent_functional.py
+│   │   └── week4_function_spaces/
+│   │       ├── wavefront_fitting.py # 项目4
+│   │       └── manim_demos/
+│   │           └── zernike_basis.py
+│   ├── module2_operators/       # 模块2：算子理论（第5-7周）
+│   │   ├── week5_linear_operators/
+│   │   ├── week6_integral_equations/
+│   │   └── week7_nonlinear_operators/
+│   ├── module3_advanced/        # 模块3：高级应用（第8-10周）
+│   │   ├── week8_banach_spaces/
+│   │   ├── week9_weak_convergence/
+│   │   └── week10_distribution_theory/
+│   ├── module4_integration/     # 模块4：工作流整合（第11-13周）
+│   │   ├── week11_optimization_engineering/
+│   │   ├── week12_uncertainty_quantification/
+│   │   └── week13_ai_integration/
+│   ├── manim_utils/             # Manim专用工具
+│   │   ├── optical_mobjects.py # 光学专用图形对象
+│   │   └── animation_templates.py # 动画模板
+│   └── utils/                   # 通用工具
+│       ├── optical_data_loader.py # 公开眼科数据集接口
+│       └── clinical_metrics.py    # 临床指标计算库
 ├── 📁 datasets/                  # 数据集（模拟+真实）
 │   ├── corneal_topography/      # 角膜地形图
 │   ├── wavefront_aberrations/   # 波前像差
 │   └── patient_vision_data/     # 患者视觉数据
 ├── 📁 projects/                  # 实践项目
-│   ├── project1_distortion/     # 项目1：畸变优化（Optiland实现）
-│   ├── project2_progressive/    # 项目2：渐进镜片设计
-│   └── final_project/           # 期末项目模板
-├── 📁 utils/                     # 工具函数
-│   ├── ai_course_generator/     # AI课程生成器（可选）
-│   └── validation_tools/        # 验证工具
-├── 📄 requirements.txt           # Python依赖（含Optiland）
+│   ├── module1_projects/        # 模块1项目
+│   ├── module2_midterm/         # 中期项目
+│   ├── module3_team_challenge/  # 团队挑战赛
+│   └── module4_final/           # 期末项目
+├── 📁 course_materials/          # 补充教材
+│   ├── manim_tutorial/          # Manim入门指南
+│   └── optical_principles/        # 光学原理补充
+├── 📄 requirements.txt           # Python依赖（含Manim）
 ├── 📄 setup_guide.md             # 安装指南
 ├── 📄 CONTRIBUTING.md            # 贡献指南
 └── 📄 README.md                  # 本文件
@@ -114,37 +140,42 @@ source lens-env/bin/activate  # Linux/Mac
 .\lens-env\Scripts\activate   # Windows
 ```
 
-### 4. 验证Optiland安装
+### 4. 验证Manim安装
 ```python
 # 验证脚本
-import optiland as ol
-print(f"Optiland版本: {ol.__version__}")
-print(f"可用功能: {dir(ol)}")
+import manim as mn
+print(f"Manim版本: {mn.__version__}")
+print(f"可用功能: {dir(mn)[:10]}...")  # 显示前10个功能
 
-# 快速测试：创建简单镜片
-lens = ol.Lens()
-lens.add_surface(ol.Surface(curvature=0.0))  # 平面
-lens.add_surface(ol.Surface(curvature=1/50))  # 50mm曲率半径
-print("Optiland环境验证成功！")
+# 快速测试：创建简单动画
+from manim import *
+
+class HelloWorld(Scene):
+    def construct(self):
+        text = Text("Hello, Functional Analysis!")
+        self.play(Write(text))
+        self.wait()
+
+print("Manim环境验证成功！")
 ```
 
 ### 5. 开始学习（推荐顺序）
 ```bash
-# 1. 先阅读第1周讲义（含Optiland介绍）
-cat course_materials/week1_fundamentals/lecture_notes.md
+# 1. 先完成模块0自测清单
+cat course_repository/module0_bridge/self_assessment_checklist.md
 
-# 2. 运行Optiland入门教程
-jupyter notebook course_materials/week1_fundamentals/python_optiland_tutorial.ipynb
+# 2. 运行Manim入门教程
+jupyter notebook course_materials/manim_tutorial/manim_basics.ipynb
 
-# 3. 尝试第1个项目：使用Optiland优化球面镜片
-jupyter notebook projects/project1_distortion/project_template.ipynb
+# 3. 尝试第1个项目：球面镜片边缘畸变可视化
+jupyter notebook projects/module1_projects/lens_distortion_visualization.ipynb
 ```
 
 ## 🚀 云端运行（无需安装）
 
-[![在Colab中打开](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/lens-functional-analysis/blob/main/notebooks/quick_start_optiland.ipynb)【待完成】
+[![在Colab中打开](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/lens-functional-analysis/blob/main/notebooks/quick_start_manim.ipynb)【待完成】
 
-点击上方按钮，直接在Google Colab中运行首个Optiland示例，无需本地配置。
+点击上方按钮，直接在Google Colab中运行首个Manim示例，无需本地配置。
 ## 🤝 贡献指南
 
 虽然本课程由AI设计生成，但我们**强烈鼓励人类专家参与改进**：
@@ -160,67 +191,98 @@ jupyter notebook projects/project1_distortion/project_template.ipynb
 - 确保所有代码可运行、有注释
 - 临床案例需符合医学伦理
 - AI生成内容需标注来源
-- **Optiland相关贡献优先**：本课程的核心价值在于与现代光学库的深度整合
+- **Manim动画贡献优先**：本课程的核心价值在于数学概念的直观可视化
 
-## Optiland使用最佳实践
+## Manim动画制作最佳实践
 
-### 课程中的Optiland封装
+### 课程中的Manim封装
 ```python
-# 为泛函分析优化的封装
-class FunctionalLensOptimizer:
-    """将泛函优化算法与Optiland集成"""
+# 为光学设计定制的Manim工具类
+class OpticalScene(Scene):
+    """光学专用场景基类，提供常用光学元素"""
     
-    def __init__(self, lens: ol.Lens):
-        self.lens = lens
-        self.optiland_optimizer = ol.Optimizer(lens)
+    def __init__(self):
+        super().__init__()
+        self.lens_style = {
+            "stroke_width": 3,
+            "color": BLUE,
+            "fill_opacity": 0.2
+        }
+        self.light_ray_style = {
+            "stroke_width": 2,
+            "color": YELLOW
+        }
     
-    def optimize_with_functional(self, functional, constraints=None):
-        """
-        使用泛函作为优化目标
+    def create_lens(self, radius=2, thickness=0.5):
+        """创建镜片图形"""
+        lens = Arc(radius=radius, angle=PI, **self.lens_style)
+        lens.shift(RIGHT * thickness)
+        return lens
+    
+    def create_light_ray(self, start, end):
+        """创建光线"""
+        return Line(start, end, **self.light_ray_style)
+    
+    def animate_fermat_principle(self, paths):
+        """动画演示费马原理"""
+        animations = []
+        for path in paths:
+            ray = self.create_light_ray(path[0], path[1])
+            animations.append(Create(ray))
+        return AnimationGroup(*animations)
+
+# 使用示例
+class FermatPrincipleDemo(OpticalScene):
+    def construct(self):
+        lens = self.create_lens()
+        self.play(Create(lens))
         
-        Args:
-            functional: 泛函函数，接受lens参数返回标量
-            constraints: Optiland约束列表
-        """
-        # 将泛函转换为Optiland兼容的目标函数
-        def target_function(params):
-            self._update_lens_params(params)
-            return functional(self.lens)
+        # 演示不同光路
+        paths = [
+            [LEFT * 3, ORIGIN],
+            [ORIGIN, RIGHT * 3]
+        ]
         
-        # 调用Optiland优化器
-        result = self.optiland_optimizer.custom_optimize(
-            target_function=target_function,
-            constraints=constraints
-        )
-        return result
-    
-    def _update_lens_params(self, params):
-        """更新镜片参数"""
-        # 实现参数到镜片表面的映射
-        pass
+        self.play(self.animate_fermat_principle(paths))
+        self.wait()
 ```
 
 ### 性能优化建议
 ```python
-# 1. 批量处理 - 避免在循环中重复创建Optiland对象
-lens_template = ol.Lens()  # 创建模板
-lens_variants = [lens_template.copy() for _ in range(100)]
+# 1. 使用简化的mobjects - 复杂场景中使用较低细节级别
+class OptimizedLens(VGroup):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # 使用简单的线条而非复杂的曲线
+        self.add(Line(LEFT, RIGHT, stroke_width=2))
+        self.add(Arc(radius=1, angle=PI/4))
 
-# 2. 使用JIT编译 - 对性能关键部分
-import numba
+# 2. 批量动画 - 减少单独的play调用
+class BatchAnimationExample(Scene):
+    def construct(self):
+        elements = [Circle() for _ in range(10)]
+        
+        # 一次性创建所有元素
+        self.play(*[Create(elem) for elem in elements])
+        
+        # 批量移动动画
+        self.play(*[elem.animate.shift(RIGHT) for elem in elements])
 
-@numba.jit(nopython=True)
-def fast_aberration_calculation(params):
-    # 高性能计算代码
-    pass
+# 3. 缓存复杂计算 - 预计算动画路径
+import numpy as np
 
-# 3. 并行化 - 利用多核CPU
-from concurrent.futures import ProcessPoolExecutor
+@lru_cache(maxsize=128)
+def calculate_lens_surface(radius, curvature, resolution=50):
+    """缓存镜片表面计算"""
+    theta = np.linspace(0, 2*np.pi, resolution)
+    x = radius * np.cos(theta)
+    y = curvature * x**2  # 简化的曲面方程
+    return list(zip(x, y, [0]*resolution))
 
-def parallel_optimization(lens_params_list):
-    with ProcessPoolExecutor() as executor:
-        results = list(executor.map(optimize_single_lens, lens_params_list))
-    return results
+# 4. 使用Camera正确设置分辨率
+config.pixel_width = 1920
+config.pixel_height = 1080
+config.frame_rate = 30
 ```
 
 ## 📜 许可证
@@ -231,34 +293,67 @@ def parallel_optimization(lens_params_list):
 - AI生成的教材内容可自由用于教育和研究
 - 企业商业使用请联系作者获取授权
 - 临床数据仅用于教学，不得用于真实患者诊断
-- **Optiland使用条款**：请遵守[Optiland许可证](https://github.com/optiland/optiland/blob/main/LICENSE)
+- **Manim使用条款**：请遵守[Manim许可证](https://github.com/ManimCommunity/manim/blob/main/LICENSE)
 
-## 🙏 致谢
-
-- **AI协作者**：本课程由大型语言模型设计生成，特别感谢其在知识整合和教学设计方面的能力
-- **Optiland团队**：提供强大的现代光学设计库，使本课程成为可能
-- **开源社区**：NumPy、SciPy、Optiland等开源项目的维护者
-- **临床专家**：匿名提供案例的眼科医生和验光师
-- **早期学员**：参与测试并提供反馈的镜片设计师
-
-## 📞 联系我们
-
-- **课程问题**：course@lens-functional-analysis.org
-- **技术问题**（含Optiland）：tech@lens-functional-analysis.org
-- **商业合作**：business@lens-functional-analysis.org
-- **紧急临床问题**：**本课程不提供医疗建议**，请联系专业医疗机构
-- **Optiland支持**：support@optiland.org
 
 ## 🌟 重要提醒
 
 > **本课程内容由AI生成，仅供参考学习。**  
 > **不应用于真实患者诊断或治疗决策。**  
 > **所有设计结果需经专业光学工程师和临床专家验证。**  
-> **Optiland是第三方库，本课程不对其功能提供保证。**
+> **Manim是第三方库，本课程不对其功能提供保证。**
 
 ---
 
-**版本**：1.0.0 (AI设计版 + Optiland集成)  
+## 📚 课程结构与评估体系
+
+### 13周完整学习路径
+
+| 模块 | 周次 | 核心主题 | Manim动画重点 | 实践项目 |
+|-----|-----|---------|--------------|----------|
+| **模块0** | 第0周 | 桥梁周（自学） | - | 技能自测清单 |
+| **模块1** | 第1-4周 | 泛函基础与建模 | 光线路径、E-L方程、梯度下降 | 4个Python脚本 + 1个Manim动画 |
+| **模块2** | 第5-7周 | 算子理论与系统建模 | 算子作用、积分过程、不动点迭代 | 个性化镜片设计工具 |
+| **模块3** | 第8-10周 | 高级应用与不确定性 | 范数比较、多目标优化、分布理论 | 鲁棒性设计挑战赛 |
+| **模块4** | 第11-13周 | 工作流整合与前沿 | 算法流程、贝叶斯更新、AI融合 | 端到端设计工作流 |
+
+### 评估体系（100%实践导向）
+
+| 评估类型 | 占比 | 具体要求 | 通过标准 |
+|----------|------|----------|----------|
+| 模块1项目 | 20% | 4个Python脚本 + Manim动画 | 代码可运行，结果合理 |
+| 中期项目（模块2） | 25% | 个性化镜片设计工具包 + 配套动画 | 解决真实临床问题 |
+| 小组项目（模块3） | 25% | 鲁棒性设计解决方案 + 团队动画演示 | 团队协作，创新性 |
+| 期末项目（模块4） | 25% | 完整工作流集成 + 专业演示视频 | 从数据到原型输出 |
+| 学习日志 | 5% | 每周反思：工具如何改进工作 | 真实性，深度思考 |
+
+**总体通过标准**：≥80分，且所有Python项目完成率≥90%，Manim动画完成率≥80%
+
+### Python工具链（开源优先）
+
+```python
+# 基础科学计算
+import numpy as np, scipy, pandas
+
+# 符号计算
+import sympy
+
+# 可视化
+import matplotlib, plotly
+
+# 数学动画（核心教学工具）
+import manim
+
+# AI辅助
+from sklearn.linear_model import LinearRegression
+
+# 部署
+import streamlit
+```
+
+---
+
+**版本**：2.0.0 (AI设计版 + Manim可视化增强)  
 **最后更新**：2025年11月6日  
-**AI模型**：Qwen-Plus  
+**AI模型**：Qwen-Plus
 
