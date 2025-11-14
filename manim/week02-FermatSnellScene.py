@@ -1,258 +1,412 @@
-# manim -pql scene.py FermatSnellScene
+# FermatSnellScene.py
+#
+# To run this animation, ensure you have Manim installed:
+# pip install manim scipy
+#
+# Then, execute the following command in your terminal:
+# manim -pqh render FermatSnellScene.py FermatToSnellDerivation
 
 from manim import *
+import numpy as np
+from scipy.optimize import fsolve
 
-# --- Configuration & Style ---
-# A centralized place for styling constants improves maintainability.
-config.background_color = "#1E1E1E"
-TEXT_COLOR = WHITE
-ACCENT_COLOR = YELLOW
-PATH_COLOR = ORANGE
-
-# Properties for the two media
-MEDIUM_1_COLOR = BLUE_E
-MEDIUM_2_COLOR = BLUE_D
-MEDIUM_1_OPACITY = 0.3
-MEDIUM_2_OPACITY = 0.4
-
-class FermatSnellScene(Scene):
+class FermatToSnellDerivation(Scene):
     """
-    An animation demonstrating the derivation of Snell's Law from Fermat's Principle.
-    The narrative structure is as follows:
-    1.  Introduce Fermat's Principle of Least Time.
-    2.  Set up the physical scene: two media, a boundary, and two points A and B.
-    3.  Define the light path and the geometric variables (x, h1, h2, d, angles).
-    4.  Construct the total time equation T(x) as a function of the crossing point x.
-    5.  Apply the principle of calculus to find the minimum: dT/dx = 0.
-    6.  Visually connect the mathematical terms in the derivative to the geometric sines of the angles.
-    7.  Arrive at the final form of Snell's Law.
+    Mathematical derivation showing how Fermat's Principle of least time
+    leads to Snell's Law of refraction using the Euler-Lagrange equation.
     """
+    
     def construct(self):
-        """Orchestrates the animation sequence."""
-        self.show_title()
-        self.setup_scene()
-        self.build_path_and_variables()
-        self.derive_time_equation()
-        self.perform_calculus()
-        self.connect_geometry_to_math()
-        self.show_final_result()
-        self.wait(3)
-
-    def show_title(self) -> None:
-        """
-        Displays the introductory title and Fermat's Principle.
-        This function's contract is to introduce the topic to the viewer.
-        """
-        title = Text("费马原理推导斯涅尔定律", font_size=48)
-        principle = Text("光线在两点之间传播的路径，是所需时间最短的路径。", font_size=28, color=ACCENT_COLOR)
+        self.camera.background_color = "#fefcfb"
         
-        VGroup(title, principle).arrange(DOWN, buff=0.5)
-
+        # Title
+        title = Text("费马原理 → 斯涅耳定律", font_size=36, color=BLACK)
+        title.to_edge(UP, buff=0.5)
+        
         self.play(Write(title))
-        self.play(Write(principle))
-        self.wait(2)
-        self.play(FadeOut(title), FadeOut(principle))
-
-    def setup_scene(self) -> None:
-        """
-        Creates the physical environment for the derivation.
-        This includes the media, boundary, and the start/end points.
-        Its contract is to prepare a static visual stage for the dynamic parts.
-        """
-        # Create the boundary line
-        self.boundary = Line(LEFT * 7, RIGHT * 7, color=WHITE)
-
-        # Define the two media as rectangles
-        medium1 = Rectangle(width=14, height=4).move_to(UP * 2)
-        medium1.set_fill(MEDIUM_1_COLOR, opacity=MEDIUM_1_OPACITY).set_stroke(width=0)
-        medium2 = Rectangle(width=14, height=4).move_to(DOWN * 2)
-        medium2.set_fill(MEDIUM_2_COLOR, opacity=MEDIUM_2_OPACITY).set_stroke(width=0)
-        
-        # Labels for the media properties
-        props1 = MathTex("n_1, v_1 = c/n_1").move_to(UP * 3 + LEFT * 5)
-        props2 = MathTex("n_2, v_2 = c/n_2").move_to(DOWN * 3 + LEFT * 5)
-
-        # Define start and end points
-        self.A_coord = UP * 2.5 + LEFT * 4
-        self.B_coord = DOWN * 2.5 + RIGHT * 4
-        self.dot_A = Dot(self.A_coord, color=YELLOW)
-        self.dot_B = Dot(self.B_coord, color=YELLOW)
-        label_A = MathTex("A").next_to(self.dot_A, UP)
-        label_B = MathTex("B").next_to(self.dot_B, DOWN)
-
-        self.play(
-            Create(self.boundary),
-            FadeIn(medium1, medium2),
-            Write(props1), Write(props2),
-            FadeIn(self.dot_A, label_A),
-            FadeIn(self.dot_B, label_B)
-        )
         self.wait(1)
-
-        # Store key mobjects for later access
-        self.add(self.boundary, self.dot_A, self.dot_B, label_A, label_B)
-
-    def build_path_and_variables(self) -> None:
-        """
-        Constructs the light path and all associated geometric variables.
-        Its contract is to overlay the geometric model onto the physical scene.
-        """
-        # Define the crossing point on the boundary, this is our variable.
-        self.crossing_point_x = -1.0 
-        crossing_coord = self.boundary.n2p(self.crossing_point_x) # n2p: number to point
         
-        # Create the light ray segments
-        self.ray1 = Line(self.A_coord, crossing_coord, color=PATH_COLOR, stroke_width=5)
-        self.ray2 = Line(crossing_coord, self.B_coord, color=PATH_COLOR, stroke_width=5)
-
-        # Create construction lines
-        perp_A = DashedLine(self.A_coord, self.A_coord.real * RIGHT, color=WHITE)
-        perp_B = DashedLine(self.B_coord, self.B_coord.real * RIGHT, color=WHITE)
-        perp_crossing = DashedLine(crossing_coord + UP*3, crossing_coord + DOWN*3, color=WHITE, stroke_width=2)
-
-        # Label distances
-        h1_line = Brace(perp_A, direction=LEFT, buff=0.2)
-        h2_line = Brace(perp_B, direction=LEFT, buff=0.2)
-        h1_label = h1_line.get_tex("h_1")
-        h2_label = h2_line.get_tex("h_2")
-
-        x_line = Brace(Line(self.A_coord.real*RIGHT, crossing_coord), direction=DOWN, buff=0.2)
-        dx_line = Brace(Line(crossing_coord, self.B_coord.real*RIGHT), direction=DOWN, buff=0.2)
-        x_label = x_line.get_tex("x")
-        dx_label = dx_line.get_tex("d-x")
+        # Step 1: Fermat's Principle
+        step1 = Text("步骤 1: 费马原理", font_size=24, color=BLUE)
+        step1.to_edge(LEFT, buff=0.5)
+        step1.shift(UP * 2.5)
         
-        # Label angles
-        self.angle1 = Angle(perp_crossing, self.ray1, radius=1.0, quadrant=(-1,-1), color=WHITE)
-        self.angle2 = Angle(perp_crossing, self.ray2, radius=1.0, quadrant=(-1,1), color=WHITE)
-        theta1_label = MathTex(r"\theta_1").next_to(self.angle1, RIGHT, buff=-0.2).shift(DOWN*0.5)
-        theta2_label = MathTex(r"\theta_2").next_to(self.angle2, RIGHT, buff=-0.2).shift(UP*0.5)
-
-        self.play(
-            Create(self.ray1), Create(self.ray2),
-            Create(perp_crossing)
+        fermat_principle = Text(
+            "光线沿时间最短的路径传播",
+            font_size=20,
+            color=BLACK
         )
-        self.play(
-            Create(self.angle1), Write(theta1_label),
-            Create(self.angle2), Write(theta2_label)
+        fermat_principle.next_to(step1, DOWN, buff=0.3)
+        
+        opl_functional = MathTex(
+            r"\Delta[y(x)] = \int_A^B n(x,y) \sqrt{1 + (y')^2} dx",
+            font_size=24,
+            color=BLACK
         )
-        self.play(
-            Create(perp_A), Create(perp_B),
-            Create(h1_line), Write(h1_label),
-            Create(h2_line), Write(h2_label)
-        )
-        self.play(
-            Create(x_line), Write(x_label),
-            Create(dx_line), Write(dx_label)
-        )
+        opl_functional.next_to(fermat_principle, DOWN, buff=0.3)
+        
+        self.play(Write(step1))
+        self.play(Write(fermat_principle))
+        self.play(Write(opl_functional))
         self.wait(2)
         
-        # Group construction lines for easier fading later
-        self.construction_group = VGroup(
-            perp_A, perp_B, perp_crossing, h1_line, h2_line, h1_label, h2_label,
-            x_line, dx_line, x_label, dx_label
+        # Step 2: Apply Euler-Lagrange equation
+        step2 = Text("步骤 2: 应用欧拉-拉格朗日方程", font_size=24, color=GREEN)
+        step2.next_to(opl_functional, DOWN, buff=0.5)
+        
+        el_equation = MathTex(
+            r"\frac{d}{dx}\left(\frac{\partial L}{\partial y'}\right) - \frac{\partial L}{\partial y} = 0",
+            font_size=24,
+            color=BLACK
         )
-
-    def derive_time_equation(self) -> None:
-        """
-        Shows the step-by-step derivation of the total time equation T(x).
-        Its contract is to formulate the objective function for minimization.
-        """
-        eq_pos = UP * 2.5 + RIGHT * 2
+        el_equation.next_to(step2, DOWN, buff=0.3)
         
-        # Step-by-step derivation of the time equation
-        eq1 = MathTex(r"T(x) = t_1 + t_2").move_to(eq_pos)
-        eq2 = MathTex(r"T(x) = \frac{L_1}{v_1} + \frac{L_2}{v_2}").move_to(eq_pos)
-        eq3 = MathTex(r"T(x) = \frac{\sqrt{h_1^2 + x^2}}{v_1} + \frac{\sqrt{h_2^2 + (d-x)^2}}{v_2}").move_to(eq_pos)
-        self.time_equation = eq3 # Save for later
-        
-        self.play(Write(eq1))
-        self.wait(1)
-        self.play(TransformMatchingTex(eq1, eq2))
-        self.wait(1.5)
-        self.play(TransformMatchingTex(eq2, eq3))
-        self.wait(2)
-
-    def perform_calculus(self) -> None:
-        """
-        States the minimization condition and shows the result of the differentiation.
-        Its contract is to apply the core calculus principle.
-        """
-        # State the condition for minimum time
-        condition = MathTex(r"\text{要使时间最短, 我们需要: } \frac{dT}{dx} = 0").next_to(self.time_equation, DOWN, buff=0.5)
-        self.play(Write(condition))
-        self.wait(1.5)
-
-        # Show the result of the derivative
-        derivative_eq = MathTex(
-            r"\frac{dT}{dx} = \frac{1}{v_1} \frac{x}{\sqrt{h_1^2 + x^2}} - \frac{1}{v_2} \frac{d-x}{\sqrt{h_2^2 + (d-x)^2}} = 0"
-        ).next_to(condition, DOWN, buff=0.5)
-        self.derivative_equation = derivative_eq # Save for later
-
-        self.play(Write(derivative_eq))
-        self.wait(2)
-        
-        # Clean up the previous equations
-        self.play(FadeOut(self.time_equation), FadeOut(condition))
-        self.play(self.derivative_equation.animate.to_edge(UP))
-
-    def connect_geometry_to_math(self) -> None:
-        """
-        Visually links the terms in the derivative equation to sin(theta) from the diagram.
-        This is the "aha!" moment of the proof. Its contract is to bridge algebra and geometry.
-        """
-        # Isolate the sin(theta_1) part of the equation
-        term1 = self.derivative_equation.get_part_by_tex(r"\frac{x}{\sqrt{h_1^2 + x^2}}")
-        box1 = SurroundingRectangle(term1, color=ACCENT_COLOR)
-        
-        # Connect to geometry
-        geo_term1 = MathTex(r"\sin\theta_1 = \frac{\text{对边}}{\text{斜边}} = \frac{x}{\sqrt{h_1^2 + x^2}}").to_edge(LEFT, buff=0.5).shift(UP)
-        
-        self.play(Create(box1))
-        self.play(Indicate(self.angle1, color=ACCENT_COLOR))
-        self.play(Write(geo_term1))
-        self.wait(2)
-
-        # Isolate the sin(theta_2) part
-        term2 = self.derivative_equation.get_part_by_tex(r"\frac{d-x}{\sqrt{h_2^2 + (d-x)^2}}")
-        box2 = SurroundingRectangle(term2, color=ACCENT_COLOR)
-        
-        # Connect to geometry
-        geo_term2 = MathTex(r"\sin\theta_2 = \frac{\text{对边}}{\text{斜边}} = \frac{d-x}{\sqrt{h_2^2 + (d-x)^2}}").next_to(geo_term1, DOWN, buff=0.5, aligned_edge=LEFT)
-        
-        self.play(ReplacementTransform(box1, box2))
-        self.play(Indicate(self.angle2, color=ACCENT_COLOR))
-        self.play(Write(geo_term2))
-        self.wait(2)
-
-        self.play(FadeOut(box2, self.construction_group))
-        self.geo_terms = VGroup(geo_term1, geo_term2)
-
-    def show_final_result(self) -> None:
-        """
-        Substitutes the geometric terms back into the equation and simplifies to Snell's Law.
-        Its contract is to present the final, conclusive result of the derivation.
-        """
-        # Substitute the sin terms back into the derivative equation
-        sub_eq = MathTex(r"\frac{\sin\theta_1}{v_1} - \frac{\sin\theta_2}{v_2} = 0").move_to(self.derivative_equation.get_center())
-        final_eq1 = MathTex(r"\frac{\sin\theta_1}{v_1} = \frac{\sin\theta_2}{v_2}").move_to(sub_eq.get_center())
-        final_eq2 = MathTex(r"\frac{\sin\theta_1}{c/n_1} = \frac{\sin\theta_2}{c/n_2}").move_to(final_eq1.get_center())
-        snell_law = MathTex(r"n_1 \sin\theta_1 = n_2 \sin\theta_2").scale(1.5).move_to(ORIGIN)
-        
-        self.play(
-            FadeOut(self.geo_terms),
-            TransformMatchingTex(self.derivative_equation, sub_eq)
+        # Identify the Lagrangian
+        lagrangian = MathTex(
+            r"L = n(y) \sqrt{1 + (y')^2}",
+            font_size=24,
+            color=GRAY
         )
-        self.wait(1)
-        self.play(TransformMatchingTex(sub_eq, final_eq1))
-        self.wait(1)
-        self.play(TransformMatchingTex(final_eq1, final_eq2))
-        self.wait(1.5)
+        lagrangian.next_to(el_equation, DOWN, buff=0.2)
         
-        # Clear the scene for the final result
-        self.play(
-            FadeOut(VGroup(*[m for m in self.mobjects if m is not snell_law]))
+        self.play(Write(step2))
+        self.play(Write(el_equation))
+        self.play(Write(lagrangian))
+        self.wait(2)
+        
+        # Step 3: Calculate partial derivatives
+        step3 = Text("步骤 3: 计算偏导数", font_size=24, color=ORANGE)
+        step3.to_edge(RIGHT, buff=0.5)
+        step3.shift(UP * 2.5)
+        
+        partial_derivatives = VGroup(
+            MathTex(
+                r"\frac{\partial L}{\partial y} = \frac{dn}{dy} \sqrt{1 + (y')^2}",
+                font_size=20,
+                color=BLACK
+            ),
+            MathTex(
+                r"\frac{\partial L}{\partial y'} = n(y) \frac{y'}{\sqrt{1 + (y')^2}}",
+                font_size=20,
+                color=BLACK
+            )
         )
+        partial_derivatives.arrange(DOWN, buff=0.2)
+        partial_derivatives.next_to(step3, DOWN, buff=0.3)
         
-        # The grand finale
+        self.play(Write(step3))
+        self.play(Write(partial_derivatives))
+        self.wait(2)
+        
+        # Step 4: Substitute into E-L equation
+        step4 = Text("步骤 4: 代入E-L方程", font_size=24, color=PURPLE)
+        step4.next_to(partial_derivatives, DOWN, buff=0.5)
+        
+        substitution = MathTex(
+            r"\frac{d}{dx}\left(n(y) \frac{y'}{\sqrt{1 + (y')^2}}\right) - \frac{dn}{dy} \sqrt{1 + (y')^2} = 0",
+            font_size=18,
+            color=BLACK
+        )
+        substitution.next_to(step4, DOWN, buff=0.3)
+        
+        self.play(Write(step4))
+        self.play(Write(substitution))
+        self.wait(2)
+        
+        # Step 5: Simplify for constant n (homogeneous medium)
+        step5 = Text("步骤 5: 均匀介质简化 (n = 常数)", font_size=24, color=PINK)
+        step5.next_to(substitution, DOWN, buff=0.5)
+        
+        simplified = MathTex(
+            r"\frac{d}{dx}\left(\frac{y'}{\sqrt{1 + (y')^2}}\right) = 0",
+            font_size=20,
+            color=BLACK
+        )
+        simplified.next_to(step5, DOWN, buff=0.3)
+        
+        self.play(Write(step5))
+        self.play(Write(simplified))
+        self.wait(2)
+        
+        # Step 6: First integral
+        step6 = Text("步骤 6: 首次积分", font_size=24, color=TEAL)
+        step6.to_edge(LEFT, buff=0.5)
+        step6.shift(DOWN * 2)
+        
+        first_integral = MathTex(
+            r"\frac{y'}{\sqrt{1 + (y')^2}} = \text{常数} = C_1",
+            font_size=20,
+            color=BLACK
+        )
+        first_integral.next_to(step6, DOWN, buff=0.3)
+        
+        self.play(Write(step6))
+        self.play(Write(first_integral))
+        self.wait(2)
+        
+        # Step 7: Solve for y'
+        step7 = Text("步骤 7: 解得", font_size=24, color=YELLOW)
+        step7.next_to(first_integral, DOWN, buff=0.5)
+        
+        solution = MathTex(
+            r"y' = \frac{C_1}{\sqrt{1 - C_1^2}} = \text{常数} = \tan\theta",
+            font_size=20,
+            color=BLACK
+        )
+        solution.next_to(step7, DOWN, buff=0.3)
+        
+        self.play(Write(step7))
+        self.play(Write(solution))
+        self.wait(2)
+        
+        # Step 8: Snell's Law
+        step8 = Text("步骤 8: 斯涅耳定律", font_size=24, color=RED)
+        step8.to_edge(RIGHT, buff=0.5)
+        step8.shift(DOWN * 2)
+        
+        snell_law = MathTex(
+            r"n_1 \sin\theta_1 = n_2 \sin\theta_2",
+            font_size=28,
+            color=RED
+        )
+        snell_law.next_to(step8, DOWN, buff=0.3)
+        
+        # Highlight the final result
+        box = SurroundingRectangle(snell_law, buff=0.2, color=RED)
+        
+        self.play(Write(step8))
         self.play(Write(snell_law))
-        self.play(Create(SurroundingRectangle(snell_law, color=YELLOW, buff=0.2)))
+        self.play(Create(box))
+        self.wait(3)
+        
+        # Fade out
+        self.play(
+            FadeOut(title),
+            FadeOut(step1),
+            FadeOut(fermat_principle),
+            FadeOut(opl_functional),
+            FadeOut(step2),
+            FadeOut(el_equation),
+            FadeOut(lagrangian),
+            FadeOut(step3),
+            FadeOut(partial_derivatives),
+            FadeOut(step4),
+            FadeOut(substitution),
+            FadeOut(step5),
+            FadeOut(simplified),
+            FadeOut(step6),
+            FadeOut(first_integral),
+            FadeOut(step7),
+            FadeOut(solution),
+            FadeOut(step8),
+            FadeOut(snell_law),
+            FadeOut(box)
+        )
+        
+        self.wait(1)
+
+
+class FermatSnellVisualization(Scene):
+    """
+    Visual demonstration of Fermat's principle leading to Snell's law.
+    Shows light rays bending at an interface to minimize travel time.
+    """
+    
+    def construct(self):
+        self.camera.background_color = "#fefcfb"
+        
+        # Title
+        title = Text("费马原理可视化", font_size=36, color=BLACK)
+        title.to_edge(UP, buff=0.5)
+        
+        self.play(Write(title))
+        self.wait(1)
+        
+        # Create two media
+        medium1 = Rectangle(
+            width=8, height=3, stroke_width=2,
+            stroke_color=BLACK, fill_color=BLUE, fill_opacity=0.2
+        )
+        medium1.to_edge(UP, buff=1)
+        
+        medium2 = Rectangle(
+            width=8, height=3, stroke_width=2,
+            stroke_color=BLACK, fill_color=GREEN, fill_opacity=0.2
+        )
+        medium2.to_edge(DOWN, buff=1)
+        
+        # Interface line
+        interface = Line(LEFT * 4, RIGHT * 4, color=BLACK, stroke_width=3)
+        
+        # Labels
+        n1_label = Text("n₁ = 1.0 (空气)", font_size=20, color=BLUE)
+        n1_label.next_to(medium1, LEFT, buff=0.2)
+        
+        n2_label = Text("n₂ = 1.5 (玻璃)", font_size=20, color=GREEN)
+        n2_label.next_to(medium2, LEFT, buff=0.2)
+        
+        self.play(
+            Create(medium1),
+            Create(medium2),
+            Create(interface),
+            Write(n1_label),
+            Write(n2_label)
+        )
+        
+        # Define start and end points
+        start_point = np.array([-2, 1.5, 0])  # In medium 1
+        end_point = np.array([2, -1.5, 0])   # In medium 2
+        
+        start_dot = Dot(start_point, color=RED, radius=0.08)
+        end_dot = Dot(end_point, color=RED, radius=0.08)
+        
+        self.play(FadeIn(start_dot), FadeIn(end_dot))
+        
+        # Create a ValueTracker for the interface point
+        interface_x_tracker = ValueTracker(0.0)
+        
+        # Function to get current interface point
+        get_interface_point = lambda: np.array([interface_x_tracker.get_value(), 0, 0])
+        
+        # Create light ray with updater
+        light_ray = always_redraw(lambda: VGroup(
+            Line(start_point, get_interface_point(), color=YELLOW, stroke_width=3),
+            Line(get_interface_point(), end_point, color=YELLOW, stroke_width=3)
+        ))
+        
+        # Calculate and display OPL
+        opl_label = Text("光程:", font_size=18, color=BLACK)
+        opl_label.to_edge(RIGHT, buff=0.5)
+        opl_label.shift(UP * 2)
+        
+        def calculate_opl():
+            interface_pt = get_interface_point()
+            
+            # Calculate path lengths
+            path1_length = np.linalg.norm(start_point - interface_pt)
+            path2_length = np.linalg.norm(interface_pt - end_point)
+            
+            # Calculate OPL (n₁ × length₁ + n₂ × length₂)
+            opl = 1.0 * path1_length + 1.5 * path2_length
+            return opl
+        
+        opl_value_text = always_redraw(lambda: Text(
+            f"{calculate_opl():.3f}", font_size=16, color=BLACK
+        ).next_to(opl_label, RIGHT, buff=0.1))
+        
+        self.play(
+            Create(light_ray),
+            Write(opl_label),
+            Write(opl_value_text)
+        )
+        
+        # Animate the interface point to find minimum
+        self.play(
+            interface_x_tracker.animate.set_value(1.0),
+            run_time=2
+        )
+        self.play(
+            interface_x_tracker.animate.set_value(-1.0),
+            run_time=2
+        )
+        
+        # Find the optimal point
+        def find_optimal_interface():
+            def opl_function(x):
+                interface_pt = np.array([x, 0, 0])
+                path1_length = np.linalg.norm(start_point - interface_pt)
+                path2_length = np.linalg.norm(interface_pt - end_point)
+                return 1.0 * path1_length + 1.5 * path2_length
+            
+            from scipy.optimize import minimize_scalar
+            result = minimize_scalar(opl_function, bounds=(-3, 3), method='bounded')
+            return result.x
+        
+        optimal_x = find_optimal_interface()
+        
+        # Snap to optimal position
+        self.play(
+            interface_x_tracker.animate.set_value(optimal_x),
+            run_time=1.5
+        )
+        
+        # Show angles and Snell's law
+        current_interface = get_interface_point()
+        
+        # Calculate incident and refracted angles
+        incident_vector = current_interface - start_point
+        refracted_vector = end_point - current_interface
+        
+        # Normalize and calculate angles with normal (y-axis)
+        incident_angle = np.arctan2(incident_vector[0], -incident_vector[1])
+        refracted_angle = np.arctan2(refracted_vector[0], -refracted_vector[1])
+        
+        # Draw normal line
+        normal = Line(current_interface + np.array([0, -1, 0]), 
+                     current_interface + np.array([0, 1, 0]), 
+                     color=GRAY, stroke_width=2, stroke_opacity=0.7)
+        
+        # Draw angle arcs
+        incident_arc = Arc(
+            radius=0.5, start_angle=np.pi/2, angle=incident_angle,
+            color=BLUE, stroke_width=2
+        ).move_to(current_interface)
+        
+        refracted_arc = Arc(
+            radius=0.5, start_angle=np.pi/2, angle=refracted_angle,
+            color=GREEN, stroke_width=2
+        ).move_to(current_interface)
+        
+        self.play(
+            Create(normal),
+            Create(incident_arc),
+            Create(refracted_arc)
+        )
+        
+        # Show Snell's law verification
+        snell_verification = MathTex(
+            f"1.0 \cdot \sin({incident_angle:.2f}) = 1.5 \cdot \sin({refracted_angle:.2f})",
+            font_size=16,
+            color=BLACK
+        )
+        snell_verification.to_edge(RIGHT, buff=0.5)
+        snell_verification.shift(DOWN * 2)
+        
+        left_side = 1.0 * np.sin(incident_angle)
+        right_side = 1.5 * np.sin(refracted_angle)
+        
+        verification_result = Text(
+            f"{left_side:.3f} ≈ {right_side:.3f} ✓",
+            font_size=16,
+            color=GREEN
+        )
+        verification_result.next_to(snell_verification, DOWN, buff=0.1)
+        
+        self.play(
+            Write(snell_verification),
+            Write(verification_result)
+        )
+        
+        self.wait(3)
+        
+        # Fade out
+        self.play(
+            FadeOut(title),
+            FadeOut(medium1),
+            FadeOut(medium2),
+            FadeOut(interface),
+            FadeOut(n1_label),
+            FadeOut(n2_label),
+            FadeOut(start_dot),
+            FadeOut(end_dot),
+            FadeOut(light_ray),
+            FadeOut(opl_label),
+            FadeOut(opl_value_text),
+            FadeOut(normal),
+            FadeOut(incident_arc),
+            FadeOut(refracted_arc),
+            FadeOut(snell_verification),
+            FadeOut(verification_result)
+        )
+        
+        self.wait(1)

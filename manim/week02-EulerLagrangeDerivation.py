@@ -1,299 +1,324 @@
-# manim -pql scene.py EulerLagrangeDerivation
+# EulerLagrangeDerivation.py
+#
+# To run this animation, ensure you have Manim installed:
+# pip install manim scipy
+#
+# Then, execute the following command in your terminal:
+# manim -pqh render EulerLagrangeDerivation.py EulerLagrangeDerivation
 
 from manim import *
 import numpy as np
-
-# Set the global theme for the animation
-config.background_color = "#1E1E1E" # A dark, modern background
-TEXT_COLOR = WHITE
-ACCENT_COLOR = YELLOW
-PATH_COLOR = BLUE
-PERTURBATION_COLOR = GREEN
-PERTURBED_PATH_COLOR = ORANGE
+from scipy.optimize import minimize_scalar
 
 class EulerLagrangeDerivation(Scene):
     """
-    An animation demonstrating the derivation of the Euler-Lagrange equation
-    using the path perturbation method, as described in the course material.
-    The animation is structured to follow the logical steps of the derivation:
-    1.  Introduce the problem: finding an optimal path y(x).
-    2.  Define a perturbed path y(x, epsilon) using a variation eta(x).
-    3.  Show that this turns the functional I[y] into a function I(epsilon).
-    4.  Apply the minimum condition from calculus: dI/d_epsilon = 0 at epsilon = 0.
-    5.  Visually step through the mathematical derivation to arrive at the E-L equation.
+    Step-by-step derivation of the Euler-Lagrange equation from the calculus of variations.
+    Shows how minimizing a functional leads to the fundamental differential equation.
     """
+    
     def construct(self):
-        self.show_title()
-        self.setup_problem()
-        self.introduce_perturbation()
-        self.functional_to_function()
-        self.apply_calculus_condition()
-        self.mathematical_derivation()
-        self.show_conclusion()
-
-    def show_title(self):
-        """Displays the main title of the animation."""
-        title = Text("变分法核心：欧拉-拉格朗日方程的推导", color=TEXT_COLOR, font_size=40)
-        subtitle = Text("Intuitive Derivation of the Euler-Lagrange Equation", color=ACCENT_COLOR, font_size=24)
-        title_group = VGroup(title, subtitle).arrange(DOWN, buff=0.4)
-        self.play(Write(title_group))
-        self.wait(2)
-        self.play(FadeOut(title_group))
-
-    def setup_problem(self):
-        """Sets up the initial problem: finding the path y(x) that minimizes a functional."""
-        # Create axes and labels
-        self.axes = Axes(
-            x_range=[0, 10, 2],
-            y_range=[0, 6, 2],
-            axis_config={"color": BLUE},
-            x_length=10,
-            y_length=6
-        ).add_coordinates()
+        self.camera.background_color = "#fefcfb"
         
-        axes_labels = self.axes.get_axis_labels(x_label="x", y_label="y")
-
-        # Define start and end points
-        self.start_point = self.axes.c2p(1, 2)
-        self.end_point = self.axes.c2p(9, 4)
-        dot_a = Dot(self.start_point, color=ACCENT_COLOR).set_z_index(1)
-        dot_b = Dot(self.end_point, color=ACCENT_COLOR).set_z_index(1)
-        label_a = MathTex("A", color=TEXT_COLOR).next_to(dot_a, DOWN)
-        label_b = MathTex("B", color=TEXT_COLOR).next_to(dot_b, UP)
+        # Title
+        title = Text("欧拉-拉格朗日方程推导", font_size=36, color=BLACK)
+        title.to_edge(UP, buff=0.5)
         
-        # Define the optimal path y(x)
-        self.optimal_path = self.axes.plot(
-            lambda x: 0.025 * (x - 5)**2 + 1.75, x_range=[1, 9], color=PATH_COLOR
-        )
-        path_label = MathTex("y(x)", color=PATH_COLOR).next_to(self.optimal_path, UP, buff=0.3)
-        
-        # Define the functional to be minimized
-        functional_text = MathTex(
-            r"I[y] = \int_a^b F(x, y, y') dx",
-            color=TEXT_COLOR
-        ).to_corner(UL)
-        
-        # Animate the setup
-        self.play(
-            Create(self.axes),
-            Create(axes_labels),
-            Write(functional_text)
-        )
-        self.play(
-            FadeIn(dot_a, scale=0.5), Write(label_a),
-            FadeIn(dot_b, scale=0.5), Write(label_b)
-        )
-        self.play(Create(self.optimal_path), Write(path_label))
-        self.wait(1)
-
-        # Store objects for later use
-        self.add(functional_text, dot_a, dot_b, label_a, label_b, path_label)
-        self.path_label = path_label
-
-    def introduce_perturbation(self):
-        """Introduces the perturbation function eta(x) and the perturbed path."""
-        # 1. Define the perturbation function eta(x)
-        self.eta_path = self.axes.plot(
-            lambda x: 0.5 * np.sin(PI * (x - 1) / 4), x_range=[1, 9], color=PERTURBATION_COLOR
-        )
-        eta_label = MathTex(r"\eta(x)", color=PERTURBATION_COLOR).next_to(self.eta_path, UP, buff=0.3)
-        
-        # Show that eta is zero at the boundaries
-        boundary_conditions = MathTex(
-            r"\eta(a) = 0, \eta(b) = 0",
-            color=PERTURBATION_COLOR
-        ).next_to(functional_text, DOWN, aligned_edge=LEFT)
-        
-        self.play(Create(self.eta_path), Write(eta_label))
-        self.play(Write(boundary_conditions))
+        self.play(Write(title))
         self.wait(1)
         
-        # 2. Define the perturbed path
-        epsilon = ValueTracker(0.5) # The perturbation amount
-        self.perturbed_path = always_redraw(
-            lambda: self.axes.plot(
-                lambda x: (0.025 * (x - 5)**2 + 1.75) + epsilon.get_value() * (0.5 * np.sin(PI * (x - 1) / 4)),
-                x_range=[1, 9],
-                color=PERTURBED_PATH_COLOR
-            )
+        # Step 1: Functional definition
+        step1 = Text("步骤 1: 泛函定义", font_size=24, color=BLUE)
+        step1.to_edge(LEFT, buff=0.5)
+        step1.shift(UP * 2.5)
+        
+        functional_def = MathTex(
+            r"J[y(x)] = \int_{x_1}^{x_2} F(x, y, y') dx",
+            font_size=28,
+            color=BLACK
         )
+        functional_def.next_to(step1, DOWN, buff=0.3)
         
-        perturbed_path_eq = MathTex(
-            r"y(x, \epsilon) = y(x) + \epsilon\eta(x)",
-            color=PERTURBED_PATH_COLOR
-        ).next_to(boundary_conditions, DOWN, aligned_edge=LEFT)
-        
-        self.play(
-            FadeOut(eta_label),
-            Transform(self.eta_path, self.perturbed_path),
-            Write(perturbed_path_eq)
-        )
-        self.add(self.perturbed_path)
-        self.play(self.eta_path.animate.set_opacity(0)) # Hide the original eta path
-        self.wait(1)
-        
-        # Animate the effect of epsilon
-        self.play(epsilon.animate.set_value(0.0), run_time=1.5)
-        self.play(epsilon.animate.set_value(-0.7), run_time=1.5)
-        self.play(epsilon.animate.set_value(0.0), run_time=1.5)
-        self.wait(1)
-
-        # Store objects
-        self.add(perturbed_path_eq)
-
-    def functional_to_function(self):
-        """Shows how the functional becomes a simple function of epsilon."""
-        # Transform the functional text
-        functional_of_epsilon = MathTex(
-            r"I(\epsilon) = \int_a^b F(x, y(x, \epsilon), y'(x, \epsilon)) dx",
-            color=TEXT_COLOR
-        ).to_corner(UL)
-        
-        self.play(Transform(self.find_mobject(r"I[y]"), functional_of_epsilon))
+        self.play(Write(step1))
+        self.play(Write(functional_def))
         self.wait(2)
         
-        # Create a new graph for I(epsilon) vs epsilon
-        self.epsilon_axes = Axes(
-            x_range=[-1, 1, 0.5],
-            y_range=[0, 4, 1],
-            x_length=4,
-            y_length=3,
-            axis_config={"color": BLUE}
-        ).to_corner(DR)
+        # Step 2: Variation of the function
+        step2 = Text("步骤 2: 函数变分", font_size=24, color=GREEN)
+        step2.next_to(functional_def, DOWN, buff=0.5)
         
-        epsilon_labels = self.epsilon_axes.get_axis_labels(x_label=r"\epsilon", y_label=r"I(\epsilon)")
-        
-        # This curve represents I(epsilon), with a minimum at epsilon=0
-        i_of_epsilon_curve = self.epsilon_axes.plot(lambda e: 2 * e**2 + 1, x_range=[-1, 1], color=ACCENT_COLOR)
-        
-        self.play(Create(self.epsilon_axes), Write(epsilon_labels))
-        self.play(Create(i_of_epsilon_curve))
-        self.wait(1)
-
-    def apply_calculus_condition(self):
-        """Applies the condition for a minimum from standard calculus."""
-        # Highlight the minimum at epsilon = 0
-        min_point = Dot(self.epsilon_axes.c2p(0, 1), color=RED)
-        min_text = MathTex(r"\epsilon=0", color=RED).next_to(min_point, UP)
-        
-        # Draw the tangent line
-        tangent = self.epsilon_axes.get_horizontal_line(self.epsilon_axes.c2p(0, 1), color=RED)
-        
-        # State the condition
-        condition = MathTex(
-            r"\left. \frac{dI}{d\epsilon} \right|_{\epsilon=0} = 0",
-            color=ACCENT_COLOR,
-            font_size=48
-        ).move_to(self.epsilon_axes.get_center() + UP*2)
-        
-        self.play(Create(min_point), Write(min_text))
-        self.play(Create(tangent))
-        self.play(Write(condition))
-        self.wait(2)
-
-        # Clean up the scene for the main derivation
-        self.play(
-            FadeOut(self.axes, self.optimal_path, self.perturbed_path, self.path_label),
-            FadeOut(self.find_mobject("A"), self.find_mobject("B")),
-            FadeOut(self.find_mobject(r"\eta(a)"), self.find_mobject(r"y(x, \epsilon)")),
-            FadeOut(self.epsilon_axes, self.find_mobject(r"\epsilon"), self.find_mobject(r"I(\epsilon)")),
-            FadeOut(min_point, min_text, tangent),
-            # Move the key equations to the top
-            VGroup(
-                self.find_mobject(r"I(\epsilon)"),
-                condition
-            ).animate.arrange(DOWN, buff=0.5).to_edge(UP)
+        variation_def = MathTex(
+            r"\tilde{y}(x) = y(x) + \epsilon \eta(x)",
+            font_size=28,
+            color=BLACK
         )
-        self.wait(1)
-
-    def mathematical_derivation(self):
-        """Steps through the mathematical derivation of the E-L equation."""
-        # Define equations using Tex to handle alignment and complex fractions
-        deriv_steps = VGroup(
-            # Step 1: Differentiate under the integral sign
-            Tex(r"$\frac{dI}{d\epsilon} = \int_a^b \left( \frac{\partial F}{\partial y} \frac{\partial y}{\partial \epsilon} + \frac{\partial F}{\partial y'} \frac{\partial y'}{\partial \epsilon} \right) dx$"),
-            # Step 2: Substitute partials
-            Tex(r"$\frac{dI}{d\epsilon} = \int_a^b \left( \frac{\partial F}{\partial y} \eta(x) + \frac{\partial F}{\partial y'} \eta'(x) \right) dx$"),
-            # Step 3: Set epsilon to 0 (implicit) and set to 0
-            Tex(r"$\int_a^b \left( \frac{\partial F}{\partial y} \eta(x) + \frac{\partial F}{\partial y'} \eta'(x) \right) dx = 0$"),
-            # Step 4: Integration by Parts on the second term
-            Tex(r"$\int_a^b \frac{\partial F}{\partial y'} \eta'(x) dx = \left[ \frac{\partial F}{\partial y'} \eta(x) \right]_a^b - \int_a^b \eta(x) \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) dx$"),
-            # Step 5: Boundary term vanishes
-            Tex(r"$\left[ \frac{\partial F}{\partial y'} \eta(x) \right]_a^b = 0 \quad (\text{since } \eta(a)=\eta(b)=0)$"),
-            # Step 6: Substitute back and combine
-            Tex(r"$\int_a^b \left( \frac{\partial F}{\partial y} - \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) \right) \eta(x) dx = 0$"),
-            # Step 7: Fundamental Lemma of Calculus of Variations
-            Tex(r"$\frac{\partial F}{\partial y} - \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) = 0$")
-        ).scale(0.8).arrange(DOWN, buff=0.5, aligned_edge=LEFT).next_to(self.find_mobject(r"\left."), DOWN, buff=0.5, aligned_edge=LEFT)
+        variation_def.next_to(step2, DOWN, buff=0.3)
         
-        # Animate each step of the derivation
-        self.play(Write(deriv_steps[0]))
-        self.wait(1)
-        self.play(TransformMatchingTex(deriv_steps[0].copy(), deriv_steps[1]))
-        self.wait(1)
-        self.play(TransformMatchingTex(deriv_steps[1].copy(), deriv_steps[2]))
+        # Boundary conditions
+        boundary_cond = MathTex(
+            r"\eta(x_1) = \eta(x_2) = 0",
+            font_size=24,
+            color=GRAY
+        )
+        boundary_cond.next_to(variation_def, DOWN, buff=0.2)
+        
+        self.play(Write(step2))
+        self.play(Write(variation_def))
+        self.play(Write(boundary_cond))
         self.wait(2)
         
-        # Integration by parts explanation
-        ibp_title = Text("分部积分 (Integration by Parts)", color=ACCENT_COLOR, font_size=28).next_to(deriv_steps[2], DOWN, buff=1)
-        self.play(Write(ibp_title))
-        self.play(Write(deriv_steps[3]))
-        self.wait(2)
-        self.play(Write(deriv_steps[4]))
+        # Step 3: First variation of the functional
+        step3 = Text("步骤 3: 泛函的一阶变分", font_size=24, color=ORANGE)
+        step3.next_to(boundary_cond, DOWN, buff=0.5)
+        
+        delta_j = MathTex(
+            r"\delta J = \frac{d}{d\epsilon} J[y + \epsilon \eta] \bigg|_{\epsilon=0}",
+            font_size=28,
+            color=BLACK
+        )
+        delta_j.next_to(step3, DOWN, buff=0.3)
+        
+        self.play(Write(step3))
+        self.play(Write(delta_j))
         self.wait(2)
         
-        # Fade out explanation and show the combined result
-        self.play(FadeOut(ibp_title), FadeOut(deriv_steps[3]), FadeOut(deriv_steps[4]))
-        self.play(Write(deriv_steps[5]))
+        # Step 4: Expand the integrand
+        step4 = Text("步骤 4: 展开被积函数", font_size=24, color=PURPLE)
+        step4.to_edge(RIGHT, buff=0.5)
+        step4.shift(UP * 2.5)
+        
+        taylor_expansion = MathTex(
+            r"F(x, y + \epsilon \eta, y' + \epsilon \eta') \\",
+            r"= F(x, y, y') + \epsilon \eta \frac{\partial F}{\partial y} + \epsilon \eta' \frac{\partial F}{\partial y'} + O(\epsilon^2)",
+            font_size=24,
+            color=BLACK
+        )
+        taylor_expansion.next_to(step4, DOWN, buff=0.3)
+        
+        self.play(Write(step4))
+        self.play(Write(taylor_expansion))
         self.wait(2)
         
-        # Fundamental Lemma
-        lemma_text = Text("根据变分法基本引理...", color=ACCENT_COLOR, font_size=28).next_to(deriv_steps[5], DOWN, buff=1)
-        self.play(Write(lemma_text))
-        self.wait(1)
+        # Step 5: Integration by parts
+        step5 = Text("步骤 5: 分部积分", font_size=24, color=RED)
+        step5.next_to(taylor_expansion, DOWN, buff=0.5)
         
-        # The final equation
-        final_equation = deriv_steps[6]
-        box = SurroundingRectangle(final_equation, color=YELLOW, buff=0.1)
-        self.play(TransformMatchingTex(deriv_steps[5].copy(), final_equation))
+        integration_by_parts = MathTex(
+            r"\int_{x_1}^{x_2} \eta' \frac{\partial F}{\partial y'} dx \\",
+            r"= \left[\eta \frac{\partial F}{\partial y'}\right]_{x_1}^{x_2} - \int_{x_1}^{x_2} \eta \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) dx \\",
+            r"= -\int_{x_1}^{x_2} \eta \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) dx",
+            font_size=22,
+            color=BLACK
+        )
+        integration_by_parts.next_to(step5, DOWN, buff=0.3)
+        
+        self.play(Write(step5))
+        self.play(Write(integration_by_parts))
+        self.wait(2)
+        
+        # Step 6: Collect terms
+        step6 = Text("步骤 6: 合并同类项", font_size=24, color=TEAL)
+        step6.next_to(integration_by_parts, DOWN, buff=0.5)
+        
+        final_variation = MathTex(
+            r"\delta J = \epsilon \int_{x_1}^{x_2} \eta \left[ \frac{\partial F}{\partial y} - \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) \right] dx = 0",
+            font_size=20,
+            color=BLACK
+        )
+        final_variation.next_to(step6, DOWN, buff=0.3)
+        
+        self.play(Write(step6))
+        self.play(Write(final_variation))
+        self.wait(2)
+        
+        # Step 7: Fundamental lemma
+        step7 = Text("步骤 7: 基本引理", font_size=24, color=PINK)
+        step7.to_edge(DOWN, buff=0.5)
+        step7.shift(LEFT * 2)
+        
+        fundamental_lemma = MathTex(
+            r"\frac{\partial F}{\partial y} - \frac{d}{dx}\left(\frac{\partial F}{\partial y'}\right) = 0",
+            font_size=28,
+            color=BLACK
+        )
+        fundamental_lemma.next_to(step7, DOWN, buff=0.3)
+        
+        # Highlight the final equation
+        box = SurroundingRectangle(fundamental_lemma, buff=0.2, color=RED)
+        
+        self.play(Write(step7))
+        self.play(Write(fundamental_lemma))
         self.play(Create(box))
         self.wait(3)
-
-        # Store for the conclusion
-        self.final_group = VGroup(final_equation, box, lemma_text)
-
-    def show_conclusion(self):
-        """Shows the conclusion and what has been achieved."""
+        
+        # Fade out
         self.play(
-            FadeOut(self.find_mobject(r"I(\epsilon)")),
-            FadeOut(self.find_mobject(r"\left.")),
-            FadeOut(self.find_mobject(r"\int_a^b"))
+            FadeOut(title),
+            FadeOut(step1),
+            FadeOut(functional_def),
+            FadeOut(step2),
+            FadeOut(variation_def),
+            FadeOut(boundary_cond),
+            FadeOut(step3),
+            FadeOut(delta_j),
+            FadeOut(step4),
+            FadeOut(taylor_expansion),
+            FadeOut(step5),
+            FadeOut(integration_by_parts),
+            FadeOut(step6),
+            FadeOut(final_variation),
+            FadeOut(step7),
+            FadeOut(fundamental_lemma),
+            FadeOut(box)
         )
+        
+        self.wait(1)
 
-        conclusion_text = VGroup(
-            Text("泛函最小化问题", font_size=32),
-            Tex(r"$\min_{y(x)} I[y]$", font_size=36),
-            Text("转化为", font_size=32),
-            Text("求解一个微分方程", font_size=32),
-        ).arrange(DOWN, buff=0.4).to_edge(LEFT, buff=1)
 
-        arrow = Arrow(conclusion_text.get_right(), self.final_group.get_left(), buff=0.5, color=WHITE)
-
+class EulerLagrangeVisualization(Scene):
+    """
+    Visual demonstration of the Euler-Lagrange equation showing how small variations
+    affect the functional and lead to the extremum condition.
+    """
+    
+    def construct(self):
+        self.camera.background_color = "#fefcfb"
+        
+        # Title
+        title = Text("欧拉-拉格朗日方程可视化", font_size=36, color=BLACK)
+        title.to_edge(UP, buff=0.5)
+        
+        self.play(Write(title))
+        self.wait(1)
+        
+        # Create coordinate system
+        axes = Axes(
+            x_range=(-1, 5),
+            y_range=(-1, 3),
+            axis_config={"color": GRAY, "stroke_width": 2},
+            x_length=8,
+            y_length=4
+        )
+        axes.to_edge(LEFT, buff=0.5)
+        
+        axis_labels = axes.get_axis_labels(x_label="x", y_label="y")
+        
+        self.play(Create(axes), Write(axis_labels))
+        
+        # Define the extremal function (solution to E-L equation)
+        def extremal_function(x):
+            return np.sin(x)  # Simple example
+        
+        # Define a competing function with parameter
+        def competing_function(x, epsilon):
+            return np.sin(x) + epsilon * x * (4 - x)  # Variation that vanishes at boundaries
+        
+        # Plot the extremal function
+        x_vals = np.linspace(0, 4, 100)
+        extremal_points = [axes.c2p(x, extremal_function(x), 0) for x in x_vals]
+        
+        extremal_curve = VMobject()
+        extremal_curve.set_points_smoothly(extremal_points)
+        extremal_curve.set_stroke(color=RED, width=4)
+        
+        extremal_label = Text("极值函数", font_size=20, color=RED)
+        extremal_label.next_to(extremal_curve, UP, buff=0.2)
+        
+        self.play(Create(extremal_curve), Write(extremal_label))
+        
+        # Create a ValueTracker for epsilon
+        epsilon_tracker = ValueTracker(0.0)
+        
+        # Plot competing function with updater
+        competing_curve = always_redraw(lambda: self.create_competing_curve(
+            axes, x_vals, lambda x: competing_function(x, epsilon_tracker.get_value()), BLUE
+        ))
+        
+        competing_label = Text("变分函数", font_size=20, color=BLUE)
+        competing_label.next_to(competing_curve, DOWN, buff=0.2)
+        
+        self.play(Create(competing_curve), Write(competing_label))
+        
+        # Calculate and display functional values
+        def functional_value(func):
+            # Example functional: J[y] = ∫[0 to 4] (y'² - y²) dx
+            from scipy.integrate import quad
+            
+            def integrand(x):
+                h = 1e-5
+                y_prime = (func(x + h) - func(x - h)) / (2 * h)
+                return y_prime**2 - func(x)**2
+            
+            value, _ = quad(integrand, 0, 4)
+            return value
+        
+        # Display functional values
+        extremal_func_val = functional_value(extremal_function)
+        
+        functional_label = Text("泛函值:", font_size=20, color=BLACK)
+        functional_label.to_edge(RIGHT, buff=0.5)
+        functional_label.shift(UP * 2)
+        
+        extremal_value_text = always_redraw(lambda: Text(
+            f"极值: {extremal_func_val:.4f}", font_size=18, color=RED
+        ).next_to(functional_label, DOWN, buff=0.2))
+        
+        competing_value_text = always_redraw(lambda: Text(
+            f"变分: {functional_value(lambda x: competing_function(x, epsilon_tracker.get_value())):.4f}", 
+            font_size=18, color=BLUE
+        ).next_to(extremal_value_text, DOWN, buff=0.2))
+        
         self.play(
-            self.final_group.animate.to_edge(RIGHT, buff=1),
-            Write(conclusion_text)
+            Write(functional_label),
+            Write(extremal_value_text),
+            Write(competing_value_text)
         )
-        self.play(GrowArrow(arrow))
-        self.wait(4)
-
-    def find_mobject(self, tex_string):
-        """Helper to find a mobject on screen from its LaTeX string."""
-        for mobj in self.mobjects:
-            if isinstance(mobj, (MathTex, Tex)):
-                try:
-                    # Check if the desired TeX string is a substring of the mobject's TeX string
-                    if tex_string in mobj.tex_string:
-                        return mobj
-                except:
-                    pass
-        return None
+        
+        # Animate epsilon changes
+        self.play(
+            epsilon_tracker.animate.set_value(0.5),
+            run_time=2
+        )
+        self.play(
+            epsilon_tracker.animate.set_value(-0.5),
+            run_time=2
+        )
+        self.play(
+            epsilon_tracker.animate.set_value(0.0),
+            run_time=2
+        )
+        
+        # Show that extremal gives minimum
+        minimum_text = Text("极值函数使泛函取极值", font_size=20, color=BLACK)
+        minimum_text.to_edge(RIGHT, buff=0.5)
+        minimum_text.shift(DOWN * 2)
+        
+        box = SurroundingRectangle(minimum_text, buff=0.2, color=GREEN)
+        
+        self.play(Write(minimum_text), Create(box))
+        self.wait(3)
+        
+        # Fade out
+        self.play(
+            FadeOut(title),
+            FadeOut(axes),
+            FadeOut(axis_labels),
+            FadeOut(extremal_curve),
+            FadeOut(extremal_label),
+            FadeOut(competing_curve),
+            FadeOut(competing_label),
+            FadeOut(functional_label),
+            FadeOut(extremal_value_text),
+            FadeOut(competing_value_text),
+            FadeOut(minimum_text),
+            FadeOut(box)
+        )
+        
+        self.wait(1)
+    
+    def create_competing_curve(self, axes, x_vals, func, color):
+        """Helper method to create a curve from a function."""
+        points = [axes.c2p(x, func(x), 0) for x in x_vals]
+        curve = VMobject()
+        curve.set_points_smoothly(points)
+        curve.set_stroke(color=color, width=3)
+        return curve

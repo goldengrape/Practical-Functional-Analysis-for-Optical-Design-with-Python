@@ -1,273 +1,444 @@
-# manim -pql scene.py BrachistochroneScene
+# BrachistochroneScene.py
+#
+# To run this animation, ensure you have Manim installed:
+# pip install manim scipy
+#
+# Then, execute the following command in your terminal:
+# manim -pqh render BrachistochroneScene.py BrachistochroneAnimation
 
 from manim import *
-from scipy.optimize import newton
 import numpy as np
+from scipy.optimize import minimize_scalar
+import icontract
 
-# --- Configuration & Style ---
-# Adhering to the principle of separating configuration from logic.
-config.background_color = "#1E1E1E"
-TEXT_COLOR = WHITE
-ACCENT_COLOR = YELLOW
-LINE_COLOR = RED_C
-ARC_COLOR = GREEN_C
-CYCLOID_COLOR = BLUE_C
-GRAVITY = 9.81
+# Physical constants for the brachistochrone problem
+GRAVITY = 9.81  # m/s²
 
-# --- Core Logic Functions (Data-Oriented & Functional) ---
-
-def calculate_travel_time(path: VMobject, g: float = GRAVITY) -> float:
+@icontract.require(lambda x: x >= 0)
+def cycloid_time(x: float, y_end: float = -1.0) -> float:
     """
-    Calculates the travel time of a bead along a given path under gravity.
-    This function is a pure data transformation: Path -> Time.
-    It embodies the functional principle of mapping input data (path geometry)
-    to output data (a scalar time value) without side effects.
-
-    The physics is based on v = sqrt(2*g*y), where y is the vertical distance fallen.
-    The total time is the integral of ds/v.
-
-    Args:
-        path (VMobject): The Manim path object representing the curve.
-        g (float): The acceleration due to gravity.
-
-    Returns:
-        float: The total calculated time for a bead to traverse the path.
+    Calculate the time for a bead to slide along a cycloid curve.
+    This is the analytical solution to the brachistochrone problem.
     """
-    # Get the discrete points that make up the Manim path object.
-    points = path.get_points()
-    total_time = 0.0
-
-    # The y-coordinate of the start point (highest point).
-    # We assume the y-axis is inverted, so the start_y is the minimum y-value.
-    start_y = points[0][1]
-
-    # Iterate over each small segment of the path.
-    for i in range(len(points) - 1):
-        p1 = points[i]
-        p2 = points[i+1]
-
-        # Calculate the length of the segment (ds).
-        segment_length = np.linalg.norm(p2 - p1)
-        
-        # If segment length is zero, it contributes no time.
-        if segment_length < 1e-9:
-            continue
-
-        # Calculate the average y-coordinate for this segment.
-        midpoint_y = (p1[1] + p2[1]) / 2
-        
-        # The vertical distance fallen is the difference from the start.
-        vertical_drop = midpoint_y - start_y
-        
-        # To avoid division by zero or sqrt of negative number at the very start,
-        # we add a small epsilon. This is an application of Occam's Razor:
-        # the simplest solution to a numerical instability.
-        if vertical_drop <= 1e-9:
-            vertical_drop = 1e-9
-        
-        # Calculate velocity at the midpoint based on energy conservation.
-        velocity = np.sqrt(2 * g * vertical_drop)
-
-        # Time for this segment is dt = ds / v.
-        segment_time = segment_length / velocity
-        
-        # Accumulate the total time.
-        total_time += segment_time
-
-    return total_time
-
-def get_cycloid_path(axes: Axes, start_point: np.ndarray, end_point: np.ndarray) -> VMobject:
-    """
-    Generates the cycloid path (the true Brachistochrone curve).
-    This function encapsulates the complex mathematics of the cycloid,
-    adhering to the Axiomatic Design principle of functional independence.
-    Its sole purpose is to create the correct geometric path.
-
-    Args:
-        axes (Axes): The Manim axes object for coordinate conversion.
-        start_point (np.ndarray): The starting coordinates (x, y).
-        end_point (np.ndarray): The ending coordinates (x, y).
-
-    Returns:
-        VMobject: A Manim path object for the cycloid.
-    """
-    x_start, y_start, _ = start_point
-    x_end, y_end, _ = end_point
-
-    # The cycloid must pass through (x_end - x_start, y_end - y_start).
-    # We need to solve B_y / B_x = (1 - cos(theta)) / (theta - sin(theta))
-    # for theta numerically to find the correct radius R.
-    def f(theta: float) -> float:
-        return (y_end - y_start) / (x_end - x_start) - (1 - np.cos(theta)) / (theta - np.sin(theta))
-
-    # Use a numerical solver to find the root theta_end.
-    # Start the search around pi, a reasonable guess.
-    theta_end = newton(f, np.pi) 
-
-    # Once theta_end is found, calculate the radius of the generating circle.
-    R = (y_end - y_start) / (1 - np.cos(theta_end))
-
-    # Parametric equations for the cycloid, shifted to the start point.
-    cycloid_func = lambda t: axes.c2p(
-        x_start + R * (t - np.sin(t)),
-        y_start + R * (1 - np.cos(t))
-    )
+    # Cycloid parameter: x = a*(t - sin(t)), y = -a*(1 - cos(t))
+    # We need to find the parameter 'a' such that the curve passes through (x, y_end)
     
-    # Create the path from theta=0 to theta=theta_end.
-    return ParametricFunction(cycloid_func, t_range=[0, theta_end], color=CYCLOID_COLOR)
+    # For a cycloid starting at (0,0) and ending at (x, y_end):
+    # The parameter 'a' is determined by the endpoint condition
+    if x == 0:
+        return float('inf')  # Invalid case
+    
+    # Numerically solve for the cycloid parameter
+    def cycloid_constraint(a):
+        # Find t such that y = -a*(1 - cos(t)) = y_end
+        # and x = a*(t - sin(t))
+        if a <= 0:
+            return float('inf')
+        
+        # For given 'a', find 't' that satisfies y constraint
+        from scipy.optimize import fsolve
+        def find_t(t):
+            return -a * (1 - np.cos(t)) - y_end
+        
+        try:
+            t_solution = fsolve(find_t, np.pi)[0]
+            # Return the difference in x coordinates
+            return a * (t_solution - np.sin(t_solution)) - x
+        except:
+            return float('inf')
+    
+    try:
+        from scipy.optimize import minimize_scalar
+        result = minimize_scalar(lambda a: abs(cycloid_constraint(a)), bounds=(0.01, 10), method='bounded')
+        a_optimal = result.x
+        
+        # Find the corresponding t value
+        def find_t_final(t):
+            return -a_optimal * (1 - np.cos(t)) - y_end
+        
+        t_final = fsolve(find_t_final, np.pi)[0]
+        
+        # Calculate the time using the brachistochrone formula
+        # T = sqrt(a/g) * t_final
+        time = np.sqrt(a_optimal / GRAVITY) * t_final
+        return time
+    except:
+        return float('inf')
 
+def straight_line_time(x: float, y_end: float = -1.0) -> float:
+    """Calculate time for straight line path."""
+    distance = np.sqrt(x**2 + y_end**2)
+    # Average velocity: v_avg = sqrt(g * |y_end| / 2)
+    v_avg = np.sqrt(GRAVITY * abs(y_end) / 2)
+    return distance / v_avg
 
-# --- Manim Scene ---
+def parabola_time(x: float, y_end: float = -1.0) -> float:
+    """Calculate time for parabolic path."""
+    # Parabola: y = -k * x², where k is chosen to pass through (x, y_end)
+    if x == 0:
+        return float('inf')
+    k = -y_end / (x**2)
+    
+    # Time integral for parabolic path
+    # T = integral[0 to x] sqrt((1 + (dy/dx)²) / (2g(kx² - ky²))) dx
+    # This is a numerical approximation
+    def integrand(xi):
+        y = -k * xi**2
+        dy_dx = -2 * k * xi
+        return np.sqrt((1 + dy_dx**2) / (2 * GRAVITY * (k * x**2 - k * xi**2)))
+    
+    from scipy.integrate import quad
+    time, _ = quad(integrand, 0, x)
+    return time
 
-class BrachistochroneScene(Scene):
+class BrachistochroneAnimation(Scene):
     """
-    A Manim scene to visually demonstrate the Brachistochrone problem.
-    The animation is structured as a narrative:
-    1.  Problem setup.
-    2.  Introduction of candidate paths.
-    3.  A race between beads on each path.
-    4.  Analysis of the result.
+    Animation demonstrating the brachistochrone problem - finding the curve 
+    of fastest descent between two points under gravity.
     """
+    
     def construct(self):
-        # 1. Setup the visual environment
-        self.setup_problem()
+        self.camera.background_color = "#fefcfb"
         
-        # 2. Define and draw the competing paths
-        paths, path_labels = self.introduce_paths()
+        # --- Title and Setup ---
+        title = Text("最速降线问题", font_size=48, color=BLACK)
+        subtitle = Text("哪条路径下降最快？", font_size=32, color=GRAY)
+        subtitle.next_to(title, DOWN, buff=0.3)
         
-        # 3. Calculate times and run the race animation
-        self.run_race(paths)
-
-        # 4. Show the results and provide the core intuition
-        self.show_results(paths, path_labels)
+        title_group = VGroup(title, subtitle)
+        title_group.to_edge(UP, buff=0.5)
         
-    def setup_problem(self):
-        """Sets up the axes, points, and problem statement."""
-        # Create axes with an inverted y-axis, which is more natural for gravity problems.
-        self.axes = Axes(
-            x_range=[0, 10, 2],
-            y_range=[0, 6, 2],
-            axis_config={"color": BLUE},
-            x_length=10,
+        self.play(Write(title))
+        self.play(FadeIn(subtitle))
+        self.wait(2)
+        
+        # --- Coordinate System ---
+        axes = Axes(
+            x_range=(-1, 6),
+            y_range=(-3, 1),
+            axis_config={"color": GRAY, "stroke_width": 2},
+            x_length=8,
             y_length=6
-        ).add_coordinates().invert_yaxis()
+        )
         
-        self.play(Create(self.axes))
+        axis_labels = axes.get_axis_labels(x_label="x", y_label="y")
         
-        # Define start and end points in graph coordinates.
-        self.start_coord = np.array([1, 1])
-        self.end_coord = np.array([9, 5])
+        # Start and end points
+        start_point = np.array([0, 0, 0])
+        end_point = np.array([4, -2, 0])
         
-        # Convert to screen coordinates.
-        start_pos = self.axes.c2p(*self.start_coord)
-        end_pos = self.axes.c2p(*self.end_coord)
-
-        dot_a = Dot(start_pos, color=ACCENT_COLOR, radius=0.12).set_z_index(10)
-        dot_b = Dot(end_pos, color=ACCENT_COLOR, radius=0.12).set_z_index(10)
-        label_a = MathTex("A").next_to(dot_a, UL)
-        label_b = MathTex("B").next_to(dot_b, DR)
+        start_dot = Dot(axes.c2p(*start_point), color=RED, radius=0.1)
+        end_dot = Dot(axes.c2p(*end_point), color=RED, radius=0.1)
         
-        title = Text("最速降线问题 (The Brachistochrone Problem)", font_size=36).to_edge(UP)
-        question = Text("找到从 A 到 B 在重力作用下最快的路径", font_size=24).next_to(title, DOWN)
-
+        start_label = Text("起点", font_size=24, color=BLACK).next_to(start_dot, LEFT)
+        end_label = Text("终点", font_size=24, color=BLACK).next_to(end_dot, RIGHT)
+        
         self.play(
-            Write(title),
-            FadeIn(dot_a, label_a, dot_b, label_b)
+            Create(axes),
+            Write(axis_labels),
+            FadeIn(start_dot),
+            FadeIn(end_dot),
+            Write(start_label),
+            Write(end_label)
         )
-        self.play(Write(question))
         self.wait(1)
-        self.play(FadeOut(question))
-
-    def introduce_paths(self) -> tuple[VGroup, VGroup]:
-        """Creates and labels the three competing paths."""
-        # Define paths using the axes coordinate system
-        line_path = self.axes.plot_line(self.start_coord, self.end_coord, color=LINE_COLOR)
         
-        # The circular arc is a segment of a circle passing through A and B
-        arc_path = self.axes.plot(
-            lambda x: 1 + np.sqrt(4**2 - (x-5)**2), 
-            x_range=[1, 9], 
-            color=ARC_COLOR
+        # --- Different Path Candidates ---
+        
+        # 1. Straight line path
+        straight_line = Line(
+            axes.c2p(*start_point),
+            axes.c2p(*end_point),
+            color=BLUE,
+            stroke_width=4
         )
         
-        cycloid_path = get_cycloid_path(self.axes, self.start_coord, self.end_coord)
+        straight_label = Text("直线路径", font_size=20, color=BLUE)
+        straight_label.next_to(straight_line, UP, buff=0.2)
         
-        # Create labels for each path
-        line_label = Text("直线 (Line)", color=LINE_COLOR, font_size=24).next_to(line_path, DOWN)
-        arc_label = Text("圆弧 (Arc)", color=ARC_COLOR, font_size=24).next_to(self.axes.c2p(5, 5.2), UP)
-        cycloid_label = Text("摆线 (Cycloid)", color=CYCLOID_COLOR, font_size=24).next_to(cycloid_path, DOWN, buff=0.4)
+        # Calculate time for straight line
+        straight_time = straight_line_time(4, -2)
+        straight_time_text = Text(f"时间: {straight_time:.2f}s", font_size=18, color=BLUE)
+        straight_time_text.next_to(straight_label, UP, buff=0.1)
         
-        paths = VGroup(line_path, arc_path, cycloid_path)
-        path_labels = VGroup(line_label, arc_label, cycloid_label)
-
         self.play(
-            Create(line_path), Write(line_label),
-            Create(arc_path), Write(arc_label),
-            Create(cycloid_path), Write(cycloid_label)
+            Create(straight_line),
+            Write(straight_label),
+            Write(straight_time_text)
         )
-        self.wait(1)
-        return paths, path_labels
-
-    def run_race(self, paths: VGroup):
-        """Simulates the race by moving beads along each path according to calculated time."""
-        # Calculate the real-world travel time for each path
-        times = [calculate_travel_time(p) for p in paths]
+        self.wait(1.5)
         
-        # Create a bead for each path
-        beads = VGroup(*[Dot(radius=0.1, color=p.get_color()).move_to(p.get_start()) for p in paths])
-        beads.set_z_index(5)
-
-        # Create the animations. The `run_time` of each animation is set
-        # to the physically calculated travel time. This is the core of the simulation.
-        animations = AnimationGroup(
-            *[MoveAlongPath(beads[i], paths[i], run_time=times[i], rate_func=linear) for i in range(len(paths))]
+        # 2. Parabolic path
+        parabola_x = np.linspace(0, 4, 100)
+        parabola_y = -0.125 * parabola_x**2  # Parabola through (0,0) and (4,-2)
+        parabola_points = [axes.c2p(x, y, 0) for x, y in zip(parabola_x, parabola_y)]
+        
+        parabola_curve = VMobject()
+        parabola_curve.set_points_smoothly(parabola_points)
+        parabola_curve.set_stroke(color=GREEN, width=4)
+        
+        parabola_label = Text("抛物线路径", font_size=20, color=GREEN)
+        parabola_label.next_to(parabola_curve, DOWN, buff=0.2)
+        
+        # Calculate time for parabola
+        parabola_time_val = parabola_time(4, -2)
+        parabola_time_text = Text(f"时间: {parabola_time_val:.2f}s", font_size=18, color=GREEN)
+        parabola_time_text.next_to(parabola_label, DOWN, buff=0.1)
+        
+        self.play(
+            Create(parabola_curve),
+            Write(parabola_label),
+            Write(parabola_time_text)
+        )
+        self.wait(1.5)
+        
+        # 3. Cycloid path (brachistochrone solution)
+        # Parametric cycloid: x = a*(t - sin(t)), y = -a*(1 - cos(t))
+        # We need to find the parameter 'a' such that the curve passes through (4, -2)
+        
+        # Solve for cycloid parameter
+        from scipy.optimize import fsolve
+        
+        def find_cycloid_params():
+            def equations(vars):
+                a, t_final = vars
+                eq1 = a * (t_final - np.sin(t_final)) - 4  # x constraint
+                eq2 = -a * (1 - np.cos(t_final)) + 2   # y constraint
+                return [eq1, eq2]
+            
+            solution = fsolve(equations, [1.0, np.pi])
+            return solution[0], solution[1]
+        
+        a_param, t_final = find_cycloid_params()
+        
+        # Generate cycloid points
+        t_vals = np.linspace(0, t_final, 100)
+        cycloid_x = a_param * (t_vals - np.sin(t_vals))
+        cycloid_y = -a_param * (1 - np.cos(t_vals))
+        cycloid_points = [axes.c2p(x, y, 0) for x, y in zip(cycloid_x, cycloid_y)]
+        
+        cycloid_curve = VMobject()
+        cycloid_curve.set_points_smoothly(cycloid_points)
+        cycloid_curve.set_stroke(color=RED, width=4)
+        
+        cycloid_label = Text("摆线路径 (最速降线)", font_size=20, color=RED)
+        cycloid_label.next_to(cycloid_curve, RIGHT, buff=0.2)
+        
+        # Calculate time for cycloid (analytical solution)
+        cycloid_time_val = np.sqrt(a_param / GRAVITY) * t_final
+        cycloid_time_text = Text(f"时间: {cycloid_time_val:.2f}s", font_size=18, color=RED)
+        cycloid_time_text.next_to(cycloid_label, UP, buff=0.1)
+        
+        self.play(
+            Create(cycloid_curve),
+            Write(cycloid_label),
+            Write(cycloid_time_text)
+        )
+        self.wait(2)
+        
+        # --- Animation of Beads Sliding Down ---
+        
+        # Create beads for each path
+        straight_bead = Dot(axes.c2p(*start_point), color=BLUE, radius=0.08)
+        parabola_bead = Dot(axes.c2p(*start_point), color=GREEN, radius=0.08)
+        cycloid_bead = Dot(axes.c2p(*start_point), color=RED, radius=0.08)
+        
+        # Animate beads sliding down
+        self.play(
+            FadeIn(straight_bead),
+            FadeIn(parabola_bead),
+            FadeIn(cycloid_bead)
         )
         
-        race_title = Text("开始比赛!", font_size=32).to_edge(UP, buff=1.5)
-        self.play(Write(race_title))
-        self.play(FadeIn(beads))
-        self.play(animations)
-        self.wait(1)
-        
-        # Store results for the final scene
-        self.times = times
-        self.play(FadeOut(race_title), FadeOut(beads))
-
-    def show_results(self, paths: VGroup, path_labels: VGroup):
-        """Displays the calculated times and explains the result."""
-        winner_index = np.argmin(self.times)
-        
-        # Display the times for each path
-        time_texts = VGroup()
-        for i, time in enumerate(self.times):
-            text = Text(f"T = {time:.2f} s", color=paths[i].get_color(), font_size=28)
-            text.next_to(path_labels[i], RIGHT, buff=0.5)
-            time_texts.add(text)
-        
-        self.play(Write(time_texts))
-        self.wait(1)
-
-        # Highlight the winner
-        winner_box = SurroundingRectangle(VGroup(paths[winner_index], path_labels[winner_index], time_texts[winner_index]), color=ACCENT_COLOR)
-        winner_text = Text("Winner!", color=ACCENT_COLOR).next_to(winner_box, UP)
-        self.play(Create(winner_box), Write(winner_text))
-        self.wait(1)
-
-        # Explain the intuition
-        explanation = VGroup(
-            Text("为什么摆线最快?", font_size=32),
-            Text("它在开始时最陡峭，可以最快地将势能转化为动能。", font_size=24),
-            Text("Builds speed earliest!", font_size=24, color=ACCENT_COLOR),
-        ).arrange(DOWN).to_corner(UL, buff=0.5)
-        
-        # Highlight the steep initial part of the cycloid
-        initial_segment = ParametricFunction(
-            paths[winner_index].func,
-            t_range=[0, 0.5], # Show just the first part
-            color=YELLOW,
-            stroke_width=10
+        # Create motion along paths
+        straight_animation = straight_bead.animate(rate_func=rate_functions.ease_in_quad).move_to(
+            axes.c2p(*end_point)
         )
         
-        self.play(Write(explanation))
-        self.play(Create(initial_segment))
+        parabola_animation = UpdateFromAlphaFunc(
+            parabola_bead,
+            lambda bead, alpha: bead.move_to(
+                axes.c2p(parabola_x[int(alpha * (len(parabola_x) - 1))], 
+                        parabola_y[int(alpha * (len(parabola_y) - 1))])
+            ),
+            rate_func=rate_functions.ease_in_quad
+        )
+        
+        cycloid_animation = UpdateFromAlphaFunc(
+            cycloid_bead,
+            lambda bead, alpha: bead.move_to(
+                axes.c2p(cycloid_x[int(alpha * (len(cycloid_x) - 1))], 
+                        cycloid_y[int(alpha * (len(cycloid_y) - 1))])
+            ),
+            rate_func=rate_functions.ease_in_quad
+        )
+        
+        # Run animations simultaneously but with different durations
+        self.play(
+            straight_animation,
+            parabola_animation,
+            cycloid_animation,
+            run_time=3
+        )
+        
+        self.wait(1)
+        
+        # --- Conclusion: Highlight the Winner ---
+        
+        # Create a results box
+        results_box = Rectangle(
+            width=4,
+            height=2,
+            stroke_color=BLACK,
+            stroke_width=2,
+            fill_color=WHITE,
+            fill_opacity=0.9
+        )
+        results_box.to_edge(RIGHT, buff=0.5)
+        
+        results_title = Text("结果对比", font_size=24, color=BLACK)
+        results_title.next_to(results_box, UP, buff=0.2)
+        
+        # Results text
+        results_text = VGroup(
+            Text(f"直线: {straight_time:.2f}s", font_size=18, color=BLUE),
+            Text(f"抛物线: {parabola_time_val:.2f}s", font_size=18, color=GREEN),
+            Text(f"摆线: {cycloid_time_val:.2f}s ✓", font_size=18, color=RED)
+        )
+        results_text.arrange(DOWN, buff=0.1, center=True)
+        results_text.move_to(results_box.get_center())
+        
+        self.play(
+            Create(results_box),
+            Write(results_title),
+            Write(results_text)
+        )
+        
+        self.wait(2)
+        
+        # --- Mathematical Formula ---
+        
+        # Show the cycloid parametric equations
+        formula_title = Text("摆线参数方程", font_size=24, color=BLACK)
+        formula_title.to_edge(LEFT, buff=0.5)
+        formula_title.shift(UP * 2)
+        
+        cycloid_formulas = MathTex(
+            r"x &= a(t - \sin t) \\\n y &= -a(1 - \cos t)",
+            font_size=20,
+            color=BLACK
+        )
+        cycloid_formulas.next_to(formula_title, DOWN, buff=0.3)
+        
+        self.play(
+            Write(formula_title),
+            Write(cycloid_formulas)
+        )
+        
+        self.wait(2)
+        
+        # Fade out
+        self.play(
+            FadeOut(title_group),
+            FadeOut(axes),
+            FadeOut(axis_labels),
+            FadeOut(start_dot),
+            FadeOut(end_dot),
+            FadeOut(start_label),
+            FadeOut(end_label),
+            FadeOut(straight_line),
+            FadeOut(straight_label),
+            FadeOut(straight_time_text),
+            FadeOut(parabola_curve),
+            FadeOut(parabola_label),
+            FadeOut(parabola_time_text),
+            FadeOut(cycloid_curve),
+            FadeOut(cycloid_label),
+            FadeOut(cycloid_time_text),
+            FadeOut(straight_bead),
+            FadeOut(parabola_bead),
+            FadeOut(cycloid_bead),
+            FadeOut(results_box),
+            FadeOut(results_title),
+            FadeOut(results_text),
+            FadeOut(formula_title),
+            FadeOut(cycloid_formulas)
+        )
+        
+        self.wait(1)
+
+
+class BrachistochroneDerivation(Scene):
+    """
+    Mathematical derivation of the brachistochrone problem using calculus of variations.
+    Shows how the Euler-Lagrange equation leads to the cycloid solution.
+    """
+    
+    def construct(self):
+        self.camera.background_color = "#fefcfb"
+        
+        # Title
+        title = Text("最速降线推导", font_size=36, color=BLACK)
+        title.to_edge(UP, buff=0.5)
+        
+        self.play(Write(title))
+        self.wait(1)
+        
+        # Step 1: Time functional
+        step1 = Text("1. 时间泛函", font_size=24, color=BLUE)
+        step1.to_edge(LEFT, buff=0.5)
+        step1.shift(UP * 2)
+        
+        time_functional = MathTex(
+            r"T[y(x)] = \int_{x_1}^{x_2} \frac{\sqrt{1 + (y')^2}}{\sqrt{2g(y_1 - y)}} dx",
+            font_size=24,
+            color=BLACK
+        )
+        time_functional.next_to(step1, DOWN, buff=0.3)
+        
+        self.play(Write(step1))
+        self.play(Write(time_functional))
+        self.wait(2)
+        
+        # Step 2: Euler-Lagrange equation
+        step2 = Text("2. 欧拉-拉格朗日方程", font_size=24, color=GREEN)
+        step2.next_to(time_functional, DOWN, buff=0.5)
+        
+        el_equation = MathTex(
+            r"\frac{d}{dx}\left(\frac{\partial L}{\partial y'}\right) - \frac{\partial L}{\partial y} = 0",
+            font_size=24,
+            color=BLACK
+        )
+        el_equation.next_to(step2, DOWN, buff=0.3)
+        
+        self.play(Write(step2))
+        self.play(Write(el_equation))
+        self.wait(2)
+        
+        # Step 3: Solution
+        step3 = Text("3. 解得摆线", font_size=24, color=RED)
+        step3.next_to(el_equation, DOWN, buff=0.5)
+        
+        solution = MathTex(
+            r"x &= a(t - \sin t) \\\n y &= a(1 - \cos t)",
+            font_size=24,
+            color=BLACK
+        )
+        solution.next_to(step3, DOWN, buff=0.3)
+        
+        self.play(Write(step3))
+        self.play(Write(solution))
         self.wait(3)
+        
+        # Fade out
+        self.play(
+            FadeOut(title),
+            FadeOut(step1),
+            FadeOut(time_functional),
+            FadeOut(step2),
+            FadeOut(el_equation),
+            FadeOut(step3),
+            FadeOut(solution)
+        )
+        
+        self.wait(1)
