@@ -1,0 +1,1 @@
+"""Tests for Chapter 00: Bridge Week - Mathematical foundations and environment setup."""

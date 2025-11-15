@@ -1,0 +1,1 @@
+"""Tests for Chapter 06: Integral Equations - Scattering and propagation equations."""

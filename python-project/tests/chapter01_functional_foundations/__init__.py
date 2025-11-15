@@ -1,0 +1,1 @@
+"""Tests for Chapter 01: Functional Foundations - L2 spaces and light field energy."""

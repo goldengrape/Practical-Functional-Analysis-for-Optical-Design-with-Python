@@ -1,0 +1,1 @@
+"""Tests for Chapter 02: Calculus of Variations - Fermat's principle and Snell's law."""
